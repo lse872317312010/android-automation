@@ -22,6 +22,41 @@ var VisualLoop = (function () {
             });
         }).length >= min;
     }
+    // Observe-only diagnostic. Deliberately has no access to io.tap or action stages.
+    function probe(io, spec) {
+        var deadline = io.now() + Math.min(Number(spec.timeoutMs) || 15000, 15000);
+        var snapshots = [], last = null;
+        for (var i = 0; i < 2; i++) {
+            if (io.cancelled()) fail('CANCELLED');
+            if (io.now() > deadline) fail('TIMEOUT');
+            if (io.foreground() !== spec.packageName) fail('FOREGROUND_CHANGED');
+            var f = io.observe();
+            if (io.cancelled()) fail('CANCELLED');
+            if (io.now() > deadline) fail('TIMEOUT');
+            if (io.foreground() !== spec.packageName) fail('FOREGROUND_CHANGED');
+            if (!(f.width > 0 && f.height > 0) ||
+                f.width !== f.displayWidth || f.height !== f.displayHeight)
+                fail('CAPTURE_GEOMETRY_MISMATCH');
+            if (last && (f.width !== last.width || f.height !== last.height ||
+                f.rotation !== last.rotation)) fail('ROTATION_CHANGED');
+            io.checkGeometry(f);
+            var matches = f.items.filter(function (item) {
+                return isFinite(item.confidence) && item.confidence >= spec.confidence &&
+                    normalize(item.text) === normalize(spec.target);
+            }).length;
+            // Only aggregate counts are returned. Never export recognized text or screen content.
+            snapshots.push({ocrCount: f.items.length, targetCount: matches});
+            last = f;
+            if (i === 0) io.sleep(700);
+        }
+        return {status: 'observed', summary: {
+            observedFrames: snapshots.length,
+            ocrCounts: snapshots.map(function (x) { return x.ocrCount; }),
+            targetCounts: snapshots.map(function (x) { return x.targetCount; }),
+            targetStableUnique: snapshots.every(function (x) { return x.targetCount === 1; }),
+            width: last.width, height: last.height, rotation: last.rotation
+        }};
+    }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
         function guard() {
@@ -64,6 +99,6 @@ var VisualLoop = (function () {
         }
         fail('POSTCONDITION_NOT_MET');
     }
-    return {normalize: normalize, target: target, expected: expected, run: run};
+    return {normalize: normalize, target: target, expected: expected, probe: probe, run: run};
 })();
 if (typeof module !== 'undefined') module.exports = VisualLoop;
