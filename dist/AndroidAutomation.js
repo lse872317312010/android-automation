@@ -24,6 +24,41 @@ var VisualLoop = (function () {
             });
         }).length >= min;
     }
+    // Observe-only diagnostic. Deliberately has no access to io.tap or action stages.
+    function probe(io, spec) {
+        var deadline = io.now() + Math.min(Number(spec.timeoutMs) || 15000, 15000);
+        var snapshots = [], last = null;
+        for (var i = 0; i < 2; i++) {
+            if (io.cancelled()) fail('CANCELLED');
+            if (io.now() > deadline) fail('TIMEOUT');
+            if (io.foreground() !== spec.packageName) fail('FOREGROUND_CHANGED');
+            var f = io.observe();
+            if (io.cancelled()) fail('CANCELLED');
+            if (io.now() > deadline) fail('TIMEOUT');
+            if (io.foreground() !== spec.packageName) fail('FOREGROUND_CHANGED');
+            if (!(f.width > 0 && f.height > 0) ||
+                f.width !== f.displayWidth || f.height !== f.displayHeight)
+                fail('CAPTURE_GEOMETRY_MISMATCH');
+            if (last && (f.width !== last.width || f.height !== last.height ||
+                f.rotation !== last.rotation)) fail('ROTATION_CHANGED');
+            io.checkGeometry(f);
+            var matches = f.items.filter(function (item) {
+                return isFinite(item.confidence) && item.confidence >= spec.confidence &&
+                    normalize(item.text) === normalize(spec.target);
+            }).length;
+            // Only aggregate counts are returned. Never export recognized text or screen content.
+            snapshots.push({ocrCount: f.items.length, targetCount: matches});
+            last = f;
+            if (i === 0) io.sleep(700);
+        }
+        return {status: 'observed', summary: {
+            observedFrames: snapshots.length,
+            ocrCounts: snapshots.map(function (x) { return x.ocrCount; }),
+            targetCounts: snapshots.map(function (x) { return x.targetCount; }),
+            targetStableUnique: snapshots.every(function (x) { return x.targetCount === 1; }),
+            width: last.width, height: last.height, rotation: last.rotation
+        }};
+    }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
         function guard() {
@@ -66,7 +101,7 @@ var VisualLoop = (function () {
         }
         fail('POSTCONDITION_NOT_MET');
     }
-    return {normalize: normalize, target: target, expected: expected, run: run};
+    return {normalize: normalize, target: target, expected: expected, probe: probe, run: run};
 })();
 if (typeof module !== 'undefined') module.exports = VisualLoop;
 
@@ -77,10 +112,11 @@ var nonce = String(Math.floor(100000 + Math.random() * 900000));
 var clicked = false;
 activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 ui.layout('<vertical padding="20" bg="#FFFFFF">' +
-    '<text text="Android Automation · 视觉闭环 0.1" textSize="23sp" textColor="#14213D"/>' +
+    '<text text="Android Automation · 视觉闭环 0.2" textSize="23sp" textColor="#14213D"/>' +
     '<text text="先运行自测。授权截图时选择整个屏幕。每次运行最多点击一次。" textSize="16sp" marginTop="12"/>' +
     '<button id="selftest" text="1. 开始本机闭环自测" marginTop="12"/>' +
-    '<button id="game" text="2. 星铁设置入口单步测试"/>' +
+    '<button id="observe" text="2. 星铁只读截图/识别诊断（绝不点击）"/>' +
+    '<button id="game" text="3. 星铁设置入口单步测试（会点击一次）"/>' +
     '<button id="stop" text="停止（也可从 AutoJs6 停止脚本）"/>' +
     '<text id="status" text="待运行：请先在 AutoJs6 抽屉授权 Shizuku" textSize="16sp" marginTop="12"/>' +
     '<button id="target" text="WAIT" textSize="30sp" h="96" marginTop="24"/>' +
@@ -127,13 +163,13 @@ function start(mode) {
     if (busy) return;
     if (selectedMode !== null) { status('请退出并重新运行脚本后再测，确保截图方向与权限重新初始化。'); return; }
     busy = true; cancelled = false; selectedMode = mode;
-    ui.selftest.setEnabled(false); ui.game.setEnabled(false);
+    ui.selftest.setEnabled(false); ui.observe.setEnabled(false); ui.game.setEnabled(false);
     threads.start(function () {
         var report = {schema: 'android-automation.run.v1', adapter: 'autojs6-shizuku',
             runtimeRequired: '6.7.0', mode: mode, runId: String(java.util.UUID.randomUUID()),
             startedAt: new Date().toISOString(), status: 'running', stage: 'preflight',
             actionCount: 0, frames: [], deviceValidation: 'not_established'};
-        var captureGranted = false, started = Date.now();
+        var captureGranted = false, started = Date.now(), isGame = (mode !== 'fixture');
         try {
             report.runtimeVersion = String(context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName);
             persist(report);
@@ -143,13 +179,14 @@ function start(mode) {
                 ui.run(function () { ui.target.setText('TEST ' + nonce); ui.outcome.setText('READY'); });
             }
             status(mode === 'fixture' ? '允许整个屏幕截图，然后保持本页，不要手动点测试按钮。' :
-                '允许整个屏幕截图。随后有 15 秒切到星铁手机菜单，保持“设置”入口可见。');
-            if (!images.requestScreenCapture(mode === 'starrail')) throw new Error('CAPTURE_PERMISSION_DENIED');
+                (mode === 'starrail_probe' ? '只读模式：截图授权后有 15 秒切到星铁，任何页面均可；不会点击。' :
+                '单击模式：截图授权后 15 秒内切到星铁手机菜单，保持“设置”入口可见。'));
+            if (!images.requestScreenCapture(isGame)) throw new Error('CAPTURE_PERMISSION_DENIED');
             captureGranted = true;
             sleep(mode === 'fixture' ? 1500 : 15000);
             if (cancelled) throw new Error('CANCELLED');
             var pkg = mode === 'fixture' ? String(context.getPackageName()) : String(shizuku.currentPackage());
-            if (mode === 'starrail' && ['com.miHoYo.hkrpg', 'com.miHoYo.hkrpg.bilibili', 'com.HoYoverse.hkrpgoversea'].indexOf(pkg) < 0)
+            if (isGame && ['com.miHoYo.hkrpg', 'com.miHoYo.hkrpg.bilibili', 'com.HoYoverse.hkrpgoversea'].indexOf(pkg) < 0)
                 throw new Error('STAR_RAIL_NOT_FOREGROUND');
             var spec = {packageName: pkg, target: mode === 'fixture' ? 'TEST ' + nonce : '设置',
                 expected: mode === 'fixture' ? ['PASS ' + nonce] : ['画面', '声音', '音量', '分辨率', '帧率'],
@@ -172,9 +209,12 @@ function start(mode) {
                 observe: function () {
                     var at = Date.now(), g = geometry();
                     // captureScreen owns its cached image; only recycle our explicit copy.
+                    var capturedFrom = Date.now();
                     var img = images.copy(images.captureScreen());
+                    var captureMs = Date.now() - capturedFrom;
                     try {
-                        var found = ocr.mlkit.detect(img), items = [];
+                        var ocrFrom = Date.now();
+                        var found = ocr.mlkit.detect(img), ocrMs = Date.now() - ocrFrom, items = [];
                         for (var i = 0; i < found.length; i++) {
                             var r = found[i], b = r.bounds;
                             items.push({text: String(r.text), confidence: Number(r.confidence),
@@ -184,15 +224,19 @@ function start(mode) {
                             displayWidth: g.width, displayHeight: g.height, rotation: g.rotation,
                             capturedAt: at, items: items};
                         report.frames.push({width: frame.width, height: frame.height, rotation: g.rotation,
-                            ocrCount: items.length, durationMs: Date.now() - at});
+                            ocrCount: items.length, captureMs: captureMs, ocrMs: ocrMs,
+                            durationMs: Date.now() - at});
                         persist(report);
                         return frame;
                     } finally { img.recycle(); }
                 }
             };
-            var result = VisualLoop.run(io, spec);
-            report.status = result.status; report.verificationFrames = result.verificationFrames;
-            report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' : 'single_step_observed_only';
+            var result = mode === 'starrail_probe' ? VisualLoop.probe(io, spec) : VisualLoop.run(io, spec);
+            report.status = result.status;
+            if (mode === 'starrail_probe') report.visualSummary = result.summary;
+            else report.verificationFrames = result.verificationFrames;
+            report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' :
+                (mode === 'starrail_probe' ? 'read_only_observed_only' : 'single_step_observed_only');
         } catch (e) {
             var message = String(e.message || e);
             report.status = cancelled ? 'cancelled' : 'blocked';
@@ -208,4 +252,5 @@ function start(mode) {
     });
 }
 ui.selftest.on('click', function () { start('fixture'); });
+ui.observe.on('click', function () { start('starrail_probe'); });
 ui.game.on('click', function () { start('starrail'); });
