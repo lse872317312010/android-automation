@@ -62,3 +62,49 @@ test('out of screen bounds blocks action',()=>{
     const f=before();f.items[0].bounds.right=9999;const t=setup([f]);
     assert.throws(()=>core.run(t.io,t.spec),/INVALID_BOUNDS/);assert.equal(t.taps(),0);
 });
+
+test('read-only probe collects two stable OCR summaries and never touches input',()=>{
+    const t=setup([before(),before()]);
+    // If this function ever uses io.tap, fail the test immediately.
+    t.io.tap=()=>{throw new Error('READ_ONLY_TAPPED');};
+    const result=core.probe(t.io,t.spec);
+    assert.equal(result.status,'observed');
+    assert.deepEqual(result.summary.ocrCounts,[1,1]);
+    assert.deepEqual(result.summary.targetCounts,[1,1]);
+    assert.equal(result.summary.targetStableUnique,true);
+    assert.equal(result.summary.observedFrames,2);
+    assert.equal(t.taps(),0);
+    assert.deepEqual(t.stages,[]);
+});
+test('read-only probe succeeds without game menu text and never taps',()=>{
+    const t=setup([frame('loading'),frame('world')]);
+    const result=core.probe(t.io,t.spec);
+    assert.equal(result.status,'observed');
+    assert.deepEqual(result.summary.targetCounts,[0,0]);
+    assert.equal(result.summary.targetStableUnique,false);
+    assert.equal(t.taps(),0);
+});
+test('read-only probe rejects a foreground switch between screenshots',()=>{
+    const t=setup([before(),before()]);
+    t.io.sleep=()=>t.foreground('unexpected.package');
+    assert.throws(()=>core.probe(t.io,t.spec),/FOREGROUND_CHANGED/);
+    assert.equal(t.taps(),0);
+});
+test('read-only probe rejects rotation and crop',()=>{
+    const t=setup([before(),frame('TEST 123456',{rotation:1})]);
+    assert.throws(()=>core.probe(t.io,t.spec),/ROTATION_CHANGED/);
+    assert.equal(t.taps(),0);
+    const cropped=setup([frame('TEST 123456',{displayWidth:1200})]);
+    assert.throws(()=>core.probe(cropped.io,cropped.spec),/CAPTURE_GEOMETRY_MISMATCH/);
+    assert.equal(cropped.taps(),0);
+});
+test('read-only probe respects cancellation and total deadline',()=>{
+    const t=setup([before(),before()]);
+    t.io.sleep=()=>t.cancel();
+    assert.throws(()=>core.probe(t.io,t.spec),/CANCELLED/);
+    assert.equal(t.taps(),0);
+    const late=setup([before(),before()]);
+    late.io.sleep=ms=>{late.io.now=()=>20000;};
+    assert.throws(()=>core.probe(late.io,late.spec),/TIMEOUT/);
+    assert.equal(late.taps(),0);
+});
