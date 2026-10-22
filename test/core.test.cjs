@@ -18,6 +18,12 @@ function setup(frames) {
             expected:['PASS 123456'], minExpected:1, confidence:0.65,timeoutMs:15000}};
 }
 const before=()=>frame('TEST 123456'), after=()=>frame('PASS 123456');
+test('report persistence cannot make the second OCR frame stale before input',()=>{
+    const t=setup([before()]);
+    t.io.stage=()=>t.io.sleep(2600);
+    assert.throws(()=>core.run(t.io,t.spec),/STALE_FRAME/);
+    assert.equal(t.taps(),0);
+});
 test('verified only after one tap and two consecutive expected frames',()=>{
     const t=setup([before(),before(),after(),frame('loading'),after(),after()]);
     assert.equal(core.run(t.io,t.spec).status,'verified');assert.equal(t.taps(),1);

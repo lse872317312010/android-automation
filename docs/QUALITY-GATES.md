@@ -127,3 +127,18 @@ No release/CI status can prove "0 bug" in untested OS, game or network condition
 `test/host.test.cjs` boots the actual AutoJs6 entrypoint in a Node VM with deliberately inert stubs for `ui`, screenshot, OCR, Shizuku, filesystem and Android geometry. This exercises fixture verification, Star Rail read-only mode, refused permissions, last-moment focus/rotation changes and uncertain injection. Mocked input never reaches Android or a network. CI runs it with the existing `test/*.test.cjs` suite, and the workflow explicitly checks its JavaScript syntax.
 
 VM behavior only approximates AutoJs6 APIs and cannot prove OEM, Shizuku, or Rhino compatibility; T3/T4 device runtime acceptance remains a distinct blocker.
+
+## Final persistence boundary and acceptance evidence
+
+The adapter writes intent before input; this final persistence can itself yield.
+It now rechecks cancellation, deadline, foreground, geometry and OCR age after
+that write, immediately before the shell request. The portable policy also
+checks OCR age again after its own stage persistence. Five baseline-red
+regressions assert zero delivered input under these races. OS injection still
+cannot be atomic with JavaScript foreground checks.
+
+`evidence/README.md` defines eight physical smoke scenarios and a pending template.
+`tool/validate-acceptance.cjs` checks exact commit/script binding, unique runs,
+conservative status semantics and a privacy field allowlist. It validates
+operator assertions for review; it does not authenticate hardware or promote a
+release. CI retains JUnit output from synthetic T0/T1 tests for each Node version.

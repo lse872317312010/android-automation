@@ -79,6 +79,11 @@ var VisualLoop = (function () {
     }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
+        function fresh(frame) {
+            var age = io.now() - frame.capturedAt;
+            if (typeof frame.capturedAt !== 'number' || !isFinite(age) || age < 0 || age > 2500)
+                fail('STALE_FRAME');
+        }
         function guard() {
             if (io.cancelled()) fail('CANCELLED');
             if (io.now() > deadline) fail('TIMEOUT');
@@ -102,9 +107,7 @@ var VisualLoop = (function () {
             Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
         guard();
         // Do not act on an OCR result that took too long to produce.
-        var frameAge = io.now() - b.capturedAt;
-        if (typeof b.capturedAt !== 'number' || !isFinite(frameAge) ||
-            frameAge < 0 || frameAge > 2500) fail('STALE_FRAME');
+        fresh(b);
         io.checkGeometry(b);
         guard();
         io.stage('action_requested');
@@ -112,6 +115,7 @@ var VisualLoop = (function () {
         guard();
         io.checkGeometry(b);
         guard();
+        fresh(b);
         io.tap(q.x, q.y); // Never retry an uncertain or failed injection.
         io.stage('verifying');
         var consecutive = 0;
@@ -251,6 +255,7 @@ function start(mode) {
                 minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000,
                 expectedExact: mode === 'fixture'};
             var lastObservedFrame = null;
+            var inputDeadline = Date.now() + spec.timeoutMs;
             var io = {
                 now: function () { return Date.now(); }, sleep: sleep,
                 cancelled: function () { return cancelled; },
@@ -275,6 +280,18 @@ function start(mode) {
                         throw new Error('INVALID_TAP_COORDINATES');
                     if (cancelled) throw new Error('CANCELLED');
                     report.actionCount = 1; persist(report); // Requested, not necessarily delivered.
+                    // Persistence can yield to a stop/focus/rotation change. Check after
+                    // the final write, with no further disk operation before injection.
+                    if (cancelled) throw new Error('CANCELLED');
+                    if (Date.now() > inputDeadline) throw new Error('TIMEOUT');
+                    if (String(shizuku.currentPackage()) !== pkg) throw new Error('FOREGROUND_CHANGED');
+                    var finalGeometry = geometry();
+                    if (finalGeometry.width !== lastObservedFrame.width ||
+                        finalGeometry.height !== lastObservedFrame.height ||
+                        finalGeometry.rotation !== lastObservedFrame.rotation) throw new Error('ROTATION_CHANGED');
+                    var finalAge = Date.now() - lastObservedFrame.capturedAt;
+                    if (!isFinite(finalAge) || finalAge < 0 || finalAge > 2500) throw new Error('STALE_FRAME');
+                    if (cancelled) throw new Error('CANCELLED');
                     shellChecked('input tap ' + x + ' ' + y);
                 },
                 observe: function () {
