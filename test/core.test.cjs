@@ -108,3 +108,21 @@ test('read-only probe respects cancellation and total deadline',()=>{
     assert.throws(()=>core.probe(late.io,late.spec),/TIMEOUT/);
     assert.equal(late.taps(),0);
 });
+
+test('extracts installed APK version without retaining a package dump',()=>{
+    const raw=['Packages:', '  Package [com.miHoYo.hkrpg]', '    versionCode=5012301 minSdk=23 targetSdk=35',
+        '    versionName=3.9.0'].join('\n');
+    assert.deepEqual(core.parsePackageDump(raw),{versionCode:'5012301',versionName:'3.9.0'});
+    assert.equal(core.parsePackageDump('versionName=3.9.0'),null);
+    assert.equal(core.parsePackageDump('versionCode=bad'),null);
+});
+test('client version drift is isolated from locale/package and missing baselines',()=>{
+    const pkg='com.miHoYo.hkrpg';
+    const current={versionCode:'5012301',versionName:'3.9.0'};
+    const old={packageName:pkg,versionCode:'5012300'};
+    assert.equal(core.versionStatus(current,old,pkg),'changed');
+    assert.equal(core.versionStatus(current,{packageName:pkg,versionCode:'5012301'},pkg),'unchanged');
+    assert.equal(core.versionStatus(current,{packageName:'com.other',versionCode:'5012301'},pkg),'first_seen');
+    assert.equal(core.versionStatus(current,null,pkg),'first_seen');
+    assert.equal(core.versionStatus(null,old,pkg),'unknown');
+});
