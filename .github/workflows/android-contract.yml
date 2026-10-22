@@ -1,10 +1,10 @@
 name: Android framework contracts (emulator, no device input)
 on:
   pull_request:
-    paths: ['android-harness/**', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   push:
     branches: ['main', 'test/android-framework-harness']
-    paths: ['android-harness/**', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   workflow_dispatch:
 permissions:
   contents: read
