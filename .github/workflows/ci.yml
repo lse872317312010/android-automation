@@ -49,8 +49,8 @@ jobs:
         run: |
           node --experimental-test-coverage --test \
             --test-coverage-include=src/core.js \
-            --test-coverage-lines=85 \
-            --test-coverage-branches=70 \
+            --test-coverage-lines=100 \
+            --test-coverage-branches=90 \
             --test-coverage-functions=100 \
             test/*.test.cjs
       - uses: actions/upload-artifact@v4
