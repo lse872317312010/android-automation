@@ -1,0 +1,70 @@
+{
+  "$comment": "DESIGN EXAMPLE ONLY. NOT LOADABLE BY v0.3, NOT DEVICE VERIFIED. All game build/version values omitted intentionally.",
+  "schema": "android-automation.skill.v0.draft",
+  "skill": {
+    "id": "starrail.daily.claim_reward",
+    "version": "0.0.0-draft",
+    "gameId": "honkai-star-rail",
+    "description": "示例日常领取能力；尚未实现，不允许执行",
+    "status": "draft",
+    "executionEnabled": false
+  },
+  "compatibility": {
+    "packages": [
+      "com.miHoYo.hkrpg",
+      "com.miHoYo.hkrpg.bilibili",
+      "com.HoYoverse.hkrpgoversea"
+    ],
+    "locale": "zh-CN",
+    "apkVersionCode": {
+      "min": null,
+      "max": null
+    },
+    "uiSignature": {
+      "profile": null,
+      "requiredAnchors": []
+    },
+    "engine": {
+      "id": "maafw",
+      "minVersion": null
+    },
+    "requiredCapabilities": [
+      "capture.fullscreen",
+      "recognize.ocr",
+      "act.tap",
+      "verify.semantic"
+    ]
+  },
+  "execution": {
+    "inputBudget": {
+      "maxActions": 0,
+      "maxRetries": 0,
+      "timeoutMs": 15000
+    },
+    "workflowPath": null,
+    "unknownState": "block",
+    "onVersionDrift": "quarantine"
+  },
+  "verification": {
+    "entryCondition": null,
+    "successCondition": null,
+    "consecutiveObservations": 2,
+    "verificationSource": "deterministic",
+    "falseCompletionPolicy": "fail_closed"
+  },
+  "promotion": {
+    "offlineRegression": "required",
+    "androidDeviceValidation": "required",
+    "review": "required",
+    "verifiedOnDevice": false
+  },
+  "rollback": {
+    "lastKnownGoodVersion": null
+  },
+  "provenance": {
+    "sourceCommit": null,
+    "assetSha256": null,
+    "signature": null,
+    "signer": null
+  }
+}
