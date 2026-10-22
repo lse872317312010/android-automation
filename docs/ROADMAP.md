@@ -17,12 +17,14 @@ Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALIT
 
 ## M0 concrete backlog / test work
 
+Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 unsafe-input scenarios, 128 valid deterministic flows and 128 read-only OCR variations. Pure `src/core.js` V8 coverage: **100% lines, 90.10% branches, 100% functions**; excludes Android host and game engine. Node 20/22 workflow matrix green. Results will be rechecked after the merge.
+
 - [x] Create ADR and research references
 - [x] Adopt zero-known-P0/P1 release policy (not unprovable absolute zero bugs)
-- [ ] Harden GitHub Actions to run all tests on Node 20/22, validate bundles, require coverage
-- [ ] Build reproducible seeded negative/positive scenario tests and fault injection
-- [ ] Add tag-driven **candidate only** CD with SHA256 and immutable reviewed artifact
-- [ ] Obtain green CI on actual PR head and main SHA
+- [x] Harden GitHub Actions to run all tests on Node 20/22, validate bundles, require coverage (100% lines/functions and >=90% branches for src/core.js)
+- [x] Build reproducible seeded negative/positive scenario tests and fault injection (512 negative + 128 valid + 128 read-only variants)
+- [x] Configure tag-driven **candidate only** CD with SHA256 and generated release notes (workflow committed; actual tag-triggered release not yet exercised)
+- [ ] Obtain green CI on the actual PR head and **merged main SHA** (branch push CI green; pending PR/merge verification)
 - [ ] Define real-device evidence template & clear `not_established` vs `verified` semantics
 - [ ] Add Android emulator app-contract test when Android runtime exists
 - [ ] Validate hardware permissions and actual game input on Redmi (M1, never simulated by CI)
