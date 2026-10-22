@@ -6,7 +6,7 @@ var nonce = String(Math.floor(100000 + Math.random() * 900000));
 var clicked = false;
 activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 ui.layout('<vertical padding="20" bg="#FFFFFF">' +
-    '<text text="Android Automation · 视觉闭环 0.2" textSize="23sp" textColor="#14213D"/>' +
+    '<text text="Android Automation · 视觉闭环 0.3" textSize="23sp" textColor="#14213D"/>' +
     '<text text="先运行自测。授权截图时选择整个屏幕。每次运行最多点击一次。" textSize="16sp" marginTop="12"/>' +
     '<button id="selftest" text="1. 开始本机闭环自测" marginTop="12"/>' +
     '<button id="observe" text="2. 星铁只读截图/识别诊断（绝不点击）"/>' +
