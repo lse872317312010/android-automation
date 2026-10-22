@@ -1,0 +1,10 @@
+{
+  "runtime": "AutoJs6 v6.7.0 bundled Rhino 2.0.0-SNAPSHOT",
+  "sourceCommit": "e72ff562f68094f9fa63eae4b4c06ec5303d670f",
+  "url": "https://raw.githubusercontent.com/SuperMonster003/AutoJs6/e72ff562f68094f9fa63eae4b4c06ec5303d670f/libs/org-mozilla-rhino-2_0_0-SNAPSHOT.jar",
+  "sha256": "4b92486727763999d98119070c0455e68e25d3af05fe06d6202e71b90b419938",
+  "gitBlob": "0561229643ce2873ebecf83adba01a5f81698a19",
+  "languageVersion": "200",
+  "licenseSource": "https://github.com/SuperMonster003/AutoJs6/tree/v6.7.0",
+  "scope": "Exact bundled JavaScript engine on a desktop JVM; Android APIs are inert stubs. Not Android emulator or device acceptance."
+}

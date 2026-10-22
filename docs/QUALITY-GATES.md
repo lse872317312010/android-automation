@@ -142,3 +142,17 @@ cannot be atomic with JavaScript foreground checks.
 conservative status semantics and a privacy field allowlist. It validates
 operator assertions for review; it does not authenticate hardware or promote a
 release. CI retains JUnit output from synthetic T0/T1 tests for each Node version.
+
+## Pinned engine and regression sensitivity
+
+See [Runtime testing](RUNTIME-TESTING.md). The actual AutoJs6 6.7.0 bundled Rhino
+jar now executes the committed script in a desktop JVM against 28 inert scenarios.
+This detects engine incompatibility beyond V8 parsing; Android-specific classes,
+permissions, native OCR and concurrency are still outside its evidence boundary.
+The same fixtures run in Node. Ten deliberate bad changes must each fail a real
+test; syntax errors and infrastructure failures do not count as detection.
+
+Expanded tests exposed raw uppercase exception export and delete-before-rename
+baseline loss. Both are fixed and have baseline-red regression cases. Local
+suite: 77 tests plus 28 Rhino scenarios, with 10/10 targeted mutants detected.
+No emulator, physical-device or production-release status is implied.

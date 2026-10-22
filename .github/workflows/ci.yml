@@ -36,6 +36,11 @@ jobs:
           node --check test/host.test.cjs
           node --check test/acceptance.test.cjs
           node --check tool/validate-acceptance.cjs
+          node --check tool/test-rhino.mjs
+          node --check tool/mutation-check.mjs
+          node --check test/runtime.test.cjs
+          node --check test/runtime/host-fixture.js
+          node --check test/runtime/case-runner.js
       - name: Unit, contract and seeded failure-injection tests
         run: |
           mkdir -p test-results
@@ -48,6 +53,15 @@ jobs:
           name: offline-test-results-node-${{ matrix.node }}-${{ github.sha }}
           path: test-results/junit.xml
           if-no-files-found: warn
+          retention-days: 14
+      - name: Prove critical regressions are detected (Node 22)
+        if: matrix.node == 22
+        run: node tool/mutation-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.node == 22
+        with:
+          name: mutation-sensitivity-${{ github.sha }}
+          path: test-results/mutations.json
           retention-days: 14
       - name: Assert draft example cannot be executed
         run: |
@@ -72,4 +86,25 @@ jobs:
         with:
           name: AndroidAutomation-script-${{ github.sha }}
           path: dist/AndroidAutomation.js
+          retention-days: 14
+  rhino:
+    name: AutoJs6 6.7.0 Rhino / inert host
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Run shipped bundle on pinned AutoJs6 engine
+        run: node tool/test-rhino.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rhino-inert-runtime-${{ github.sha }}
+          path: test-results/rhino.json
           retention-days: 14

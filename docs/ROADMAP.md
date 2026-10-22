@@ -86,6 +86,19 @@ Version registry, repair API and Personal OS integration are separate deliverabl
 - Main branch-rule enforcement and disposable failing-PR verification remain
   pending. See issue #5 for the remaining P0 work.
 
+### Hardware-free continuation: actual engine and failure sensitivity
+
+- PR #6 merged after confirming its exact head's Node 20/22 checks.
+- Shared fault matrix boots the committed bundle in Node and the pinned Rhino
+  engine shipped with AutoJs6 6.7.0. Local suite expands to 77 Node tests and
+  28 Rhino scenarios; 10 deliberately broken safety/verification paths are all
+  detected by tests. See [runtime evidence scope](RUNTIME-TESTING.md).
+- New baseline-red regressions fix exception-code disclosure and losing a valid
+  baseline when replacement rename fails. Owned-image cleanup, write failures,
+  duplicate starts, cancellation, cold restart and ignored input are exercised.
+- PR/main CI and candidate CD gain runtime and mutation gates; retain results.
+  These remain T0/T1 evidence. T3 Android and T4 Redmi are still pending.
+
 ## Release sequence
 
 1. Add or change a Skill; bind to declared game/channel/locale/engine ABI.
