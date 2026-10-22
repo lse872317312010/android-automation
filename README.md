@@ -1,7 +1,22 @@
 # Android Automation · 本地视觉执行器 0.3（星铁 APK 版本漂移保护）
 
-截至 2026-10-19：**可运行脚本已实现，离线测试通过，未在 Redmi 或模拟器运行。**
+截至 2026-10-22：**脚本已有纯 JS 离线验证；尚未在 Redmi 或模拟器实际验收。**
 交付形态是官方 AutoJs6 APK + 单个脚本，不是新编译的 Personal OS 独立 APK。
+
+## 工程路线与质量门禁（先测试，后开发）
+
+项目优先级已调整为：**M0 自动 CI/CD + 可复现设备模拟器与故障注入测试 → M1 Redmi 真机验收 → M2 Skill/插件兼容性与回滚 → M3 AI 修复提案/经验固化 → M4 上游版本同步**。
+
+- [ADR-0001：确定性 Game Agent + AI Skill Repair](docs/ADR-0001-reliable-game-agent.md) — 架构原则、更新自修复、零 Token 优先策略与安全边界。
+- [游戏 Agent 研究矩阵](docs/GAME-AGENT-RESEARCH.md) — MaaFwPhoneAI、MobiAgent/AgentRR、Mobile-Agent-E、MaaFramework、MaaEnd、BetterGI、星铁上游等。
+- [CI/CD、测试环境与质量门禁](docs/QUALITY-GATES.md) — Node LTS、随机故障注入、覆盖率、生成构建一致性、模拟器与真机的分级验收。
+- [路线图与具体完成条件](docs/ROADMAP.md) — M0–M6、各阶段退出条件、Skill/版本管理接口草案。
+- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 为后续兼容性管理和有审核的发布提供数据契约示范，当前仅为设计样例。
+
+**“0 bug”是质量目标，不能作为未经证明的绝对保证。** 实际执行标准是零已知 P0/P1 缺陷、全量强制测试通过、失败场景零误触控和零错误完成宣称。CI 仅验证硬件接口以上的可模拟策略；真机权限、MediaProjection、OCR 和 Shizuku 的行为必须独立验收。
+
+CI 在 PR/提交上运行 Node 20/22 单元与故障注入测试、代码语法检查、覆盖率阈值、重新打包与产物一致性检查。候选标签 `vX.Y.Z-rc.N` 可以触发脚本与 SHA256 的自动预发布，**不是可供宣称真机通过的 APK**。
+
 
 ## 手机上测试（无需 PC）
 
@@ -9,7 +24,7 @@
 2. 在 AutoJs6 左侧抽屉打开 **Shizuku** 并允许授权。Shizuku 已启动不等于 AutoJs6 已获得授权。不需要打开无障碍或配置 ADB。
 3. 下载本目录 `dist/AndroidAutomation.js`，用 AutoJs6 打开/导入并运行。
 4. 点“1. 开始本机闭环自测”。Android 截图授权选择 **整个屏幕**，保持该页面前台，不手动触碰测试按钮。
-5. 脚本会从截图 OCR 找到随机 `TEST 六位数字`，触控后再次截图，只有两帧都识别到对应 `PASS 六位数字` 才显示 `verified`。
+5. 脚本会从截图 OCR 精确匹配随机 `TEST 六位数字`，触控后再次截图，只有连续两帧都**精确**识别到对应 `PASS 六位数字` 才显示 `verified`，防止随机令牌前后缀导致的假阳性。
 6. 点击“复制最近的诊断报告”查看/反馈结果。再次测试需要退出并重新运行脚本。
 
 系统授权无法由应用代替用户确认。小米如终止后台执行，再按系统提示允许 AutoJs6 后台运行；无需先批量修改系统设置。
@@ -100,9 +115,11 @@ SRC 的 Python 业务不能直接当 Maa Pipeline 导入。本模块只验证执
 ## 开发与验收
 
 ```sh
-node --test test/core.test.cjs
+node --test test/*.test.cjs
+node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=85 --test-coverage-branches=70 --test-coverage-functions=100 test/*.test.cjs
 node build.mjs
 node --check dist/AndroidAutomation.js
+git diff --exit-code -- dist/AndroidAutomation.js
 ```
 
 离线测试验证控制策略（含只读探测不发送动作、前台变化、旋转、超时、取消），不验证 AutoJs6 Rhino/Android API、权限、实际 OCR 或游戏版本。
