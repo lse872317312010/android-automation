@@ -10,7 +10,7 @@
 Absolute zero defects in arbitrary code or game/OEM versions is **not demonstrable** with unit tests. Our measurable release policy is:
 
 - **0 known open P0/P1 bugs** at release time; no intentionally skipped safety-critical tests.
-- **100% mandatory CI checks pass** on the exact commit; a failing pipeline blocks merge/release.
+- **100% mandatory CI checks pass** on the exact commit; do not merge/release when CI is red. GitHub-enforced merge blocking additionally requires the pending branch protection ruleset below.
 - **0 unsafe input actions** in all negative/property/fault-injection scenarios.
 - **0 false claims of completion** in all controlled fixtures; observed, input-requested and completed states remain distinct.
 - All required features must have contract tests, a failure-path test and documented device acceptance if they touch OS-specific APIs.
@@ -44,6 +44,17 @@ The current code covers **T0/T1 only** and has no T2/T3/T4/T5/T6 validation evid
 - PR merge and tagged candidate releases must not bypass test/coverage/generation gates.
 - Automatic *candidate* release on `vX.Y.Z-rc.N` tag is permitted once tests are green. A candidate is **not hardware approved**, even when released with checksum.
 - Production-device support requires a separate signed manual acceptance record; no automated stable release until that workflow exists.
+
+## Required repository branch rule (administrative setting; not yet confirmed enabled)
+
+The workflows actively **fail on bad code**, but GitHub Actions alone does **not** guarantee that GitHub rejects merges/direct pushes. Configure GitHub **Settings → Rules → Rulesets** (or branch protection) for `main`:
+
+- Require pull requests and the latest head to be up-to-date before merging.
+- Require successful checks `Node 20 / policy + simulator` and `Node 22 / policy + simulator`.
+- Block force-push and deletion of `main`; avoid bypassing checks for administrators.
+- Record a successful branch-rule verification with a deliberately failing test on a disposable PR, then discard that PR.
+
+The connector available for this change does not expose a branch-rule mutation operation, so **this administrative enforcement is pending**; until verified, call these *automated checks*, not *enforced branch protection*. Tag candidate CD itself repeats all tests rather than trusting a previously run check.
 
 ## Deterministic simulation fixtures
 
