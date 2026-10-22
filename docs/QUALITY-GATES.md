@@ -121,3 +121,9 @@ No release/CI status can prove "0 bug" in untested OS, game or network condition
 - The portable policy rejects OCR capture timestamps of the wrong type, non-finite age, timestamps from the future, or ages above 2500 ms. These failure paths have explicit zero-input regression tests.
 - Rechecks reduce time-of-check/time-of-use exposure; no JavaScript check can make Android focus and the later shell injection atomic. The Redmi acceptance gate must still cover intentional focus switching while injection is pending.
 - These regressions run under Node mocks. They do **not** increase Android host code coverage, do not substitute for Android emulator validation, and do not establish 0 bugs on real hardware.
+
+## T1 host contract simulator (new PR validation)
+
+`test/host.test.cjs` boots the actual AutoJs6 entrypoint in a Node VM with deliberately inert stubs for `ui`, screenshot, OCR, Shizuku, filesystem and Android geometry. This exercises fixture verification, Star Rail read-only mode, refused permissions, last-moment focus/rotation changes and uncertain injection. Mocked input never reaches Android or a network. CI runs it with the existing `test/*.test.cjs` suite, and the workflow explicitly checks its JavaScript syntax.
+
+VM behavior only approximates AutoJs6 APIs and cannot prove OEM, Shizuku, or Rhino compatibility; T3/T4 device runtime acceptance remains a distinct blocker.

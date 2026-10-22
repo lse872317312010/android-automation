@@ -33,6 +33,7 @@ jobs:
           node --check build.mjs
           node --check test/core.test.cjs
           node --check test/invariants.test.cjs
+          node --check test/host.test.cjs
       - name: Unit, contract and seeded failure-injection tests
         run: node --test test/*.test.cjs
       - name: Assert draft example cannot be executed
