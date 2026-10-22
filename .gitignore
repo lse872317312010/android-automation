@@ -1,2 +1,6 @@
 .cache/
 test-results/
+android-harness/.gradle/
+android-harness/**/build/
+android-harness/app/libs/
+android-harness/local.properties
