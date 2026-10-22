@@ -1,10 +1,10 @@
 name: Android framework contracts (emulator, no device input)
 on:
   pull_request:
-    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   push:
     branches: ['main', 'test/android-framework-harness']
-    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,6 +31,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Test native evidence validator
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
       - name: Verify pinned engine and prepare test-only dependency
         run: |
           node tool/test-rhino.mjs
@@ -50,6 +52,14 @@ jobs:
           target: default
           disable-animations: true
           script: gradle -p android-harness :app:connectedDebugAndroidTest --stacktrace
+      - name: Require complete native JUnit evidence
+        env:
+          EVIDENCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 tool/verify-android-results.py \
+            --results android-harness/app/build/outputs/androidTest-results/connected \
+            --bundle dist/AndroidAutomation.js --commit "$EVIDENCE_COMMIT" --api 30 \
+            --output test-results/android-framework.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -58,5 +68,6 @@ jobs:
             android-harness/app/build/reports/androidTests
             android-harness/app/build/outputs/androidTest-results
             test-results/rhino.json
+            test-results/android-framework.json
           if-no-files-found: warn
           retention-days: 14

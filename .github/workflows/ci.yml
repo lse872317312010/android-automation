@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - name: Test native evidence validator
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
       - name: Verify source/builder JavaScript syntax
         run: |
           node --check src/core.js
