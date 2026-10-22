@@ -118,7 +118,8 @@ var VisualLoop = (function () {
         }
         fail('POSTCONDITION_NOT_MET');
     }
-    return {normalize: normalize, target: target, expected: expected, probe: probe,\n        parsePackageDump: parsePackageDump, versionStatus: versionStatus, run: run};
+    return {normalize: normalize, target: target, expected: expected, probe: probe,
+        parsePackageDump: parsePackageDump, versionStatus: versionStatus, run: run};
 })();
 if (typeof module !== 'undefined') module.exports = VisualLoop;
 
