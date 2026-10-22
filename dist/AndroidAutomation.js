@@ -59,6 +59,23 @@ var VisualLoop = (function () {
             width: last.width, height: last.height, rotation: last.rotation
         }};
     }
+
+    // APK metadata is only an update signal; in-game asset hot patches can occur
+    // without changing Android's versionCode.
+    function parsePackageDump(raw) {
+        var source = String(raw || '');
+        var code = /\bversionCode=(\d+)\b/.exec(source);
+        if (!code) return null;
+        var name = /\bversionName=([^\r\n]*)/.exec(source);
+        var value = name ? name[1].trim().slice(0, 80) : '';
+        return {versionCode: code[1], versionName: value || null};
+    }
+    function versionStatus(current, previous, pkg) {
+        if (!current || !/^\d+$/.test(String(current.versionCode || ''))) return 'unknown';
+        if (!previous || previous.packageName !== pkg ||
+            !/^\d+$/.test(String(previous.versionCode || ''))) return 'first_seen';
+        return String(current.versionCode) === String(previous.versionCode) ? 'unchanged' : 'changed';
+    }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
         function guard() {
@@ -101,18 +118,20 @@ var VisualLoop = (function () {
         }
         fail('POSTCONDITION_NOT_MET');
     }
-    return {normalize: normalize, target: target, expected: expected, probe: probe, run: run};
+    return {normalize: normalize, target: target, expected: expected, probe: probe,
+        parsePackageDump: parsePackageDump, versionStatus: versionStatus, run: run};
 })();
 if (typeof module !== 'undefined') module.exports = VisualLoop;
 
 /* AutoJs6 6.7.0 host. Generated deliverable starts with the ui directive. */
 var busy = false, cancelled = false, lastReport = null, selectedMode = null;
 var evidenceFile = String(context.getFilesDir()) + '/android-automation-run.json';
+var clientVersionFile = String(context.getFilesDir()) + '/starrail-client-version.json';
 var nonce = String(Math.floor(100000 + Math.random() * 900000));
 var clicked = false;
 activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 ui.layout('<vertical padding="20" bg="#FFFFFF">' +
-    '<text text="Android Automation · 视觉闭环 0.2" textSize="23sp" textColor="#14213D"/>' +
+    '<text text="Android Automation · 视觉闭环 0.3" textSize="23sp" textColor="#14213D"/>' +
     '<text text="先运行自测。授权截图时选择整个屏幕。每次运行最多点击一次。" textSize="16sp" marginTop="12"/>' +
     '<button id="selftest" text="1. 开始本机闭环自测" marginTop="12"/>' +
     '<button id="observe" text="2. 星铁只读截图/识别诊断（绝不点击）"/>' +
@@ -149,6 +168,22 @@ ui.copy.on('click', function () {
     if (busy) return;
     if (lastReport) { setClip(JSON.stringify(lastReport, null, 2)); toast('已复制诊断 JSON（不含截图或识别原文）'); }
 });
+function readClientVersionBaseline() {
+    try {
+        if (!files.exists(clientVersionFile)) return null;
+        var value = JSON.parse(files.read(clientVersionFile));
+        return value && value.schema === 'starrail-client-version.v1' ? value : null;
+    } catch (_) { return null; }
+}
+function writeClientVersionBaseline(pkg, version) {
+    var tmp = clientVersionFile + '.tmp';
+    files.write(tmp, JSON.stringify({schema: 'starrail-client-version.v1',
+        packageName: pkg, versionCode: version.versionCode,
+        versionName: version.versionName, observedAt: new Date().toISOString()}));
+    var dest = new java.io.File(clientVersionFile);
+    if (dest.exists()) dest.delete();
+    if (!new java.io.File(tmp).renameTo(dest)) throw new Error('VERSION_BASELINE_WRITE_FAILED');
+}
 function shellChecked(command) {
     var result = shizuku(command);
     if (Number(result.code) !== 0) throw new Error('SHIZUKU_COMMAND_FAILED');
@@ -169,7 +204,8 @@ function start(mode) {
             runtimeRequired: '6.7.0', mode: mode, runId: String(java.util.UUID.randomUUID()),
             startedAt: new Date().toISOString(), status: 'running', stage: 'preflight',
             actionCount: 0, frames: [], deviceValidation: 'not_established'};
-        var captureGranted = false, started = Date.now(), isGame = (mode !== 'fixture');
+        var captureGranted = false, started = Date.now(), isGame = (mode !== 'fixture'),
+            clientVersion = null, clientStatus = 'not_applicable';
         try {
             report.runtimeVersion = String(context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName);
             persist(report);
@@ -188,6 +224,21 @@ function start(mode) {
             var pkg = mode === 'fixture' ? String(context.getPackageName()) : String(shizuku.currentPackage());
             if (isGame && ['com.miHoYo.hkrpg', 'com.miHoYo.hkrpg.bilibili', 'com.HoYoverse.hkrpgoversea'].indexOf(pkg) < 0)
                 throw new Error('STAR_RAIL_NOT_FOREGROUND');
+            if (isGame) {
+                // Package is taken from a fixed allowlist above, never arbitrary OCR.
+                try {
+                    clientVersion = VisualLoop.parsePackageDump(shellChecked('dumpsys package ' + pkg));
+                } catch (_) { clientVersion = null; }
+                clientStatus = VisualLoop.versionStatus(clientVersion, readClientVersionBaseline(), pkg);
+                report.clientVersion = clientVersion;
+                report.clientVersionStatus = clientStatus;
+                // Explicit game input requires a successful no-touch observation first.
+                // If the installed APK was updated, refuse the old clickable workflow.
+                if (mode === 'starrail' && clientStatus !== 'unchanged')
+                    throw new Error(clientStatus === 'changed' ? 'GAME_VERSION_CHANGED_RUN_READ_ONLY_PROBE' :
+                        'GAME_VERSION_BASELINE_REQUIRED');
+                persist(report);
+            }
             var spec = {packageName: pkg, target: mode === 'fixture' ? 'TEST ' + nonce : '设置',
                 expected: mode === 'fixture' ? ['PASS ' + nonce] : ['画面', '声音', '音量', '分辨率', '帧率'],
                 minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000};
@@ -233,7 +284,13 @@ function start(mode) {
             };
             var result = mode === 'starrail_probe' ? VisualLoop.probe(io, spec) : VisualLoop.run(io, spec);
             report.status = result.status;
-            if (mode === 'starrail_probe') report.visualSummary = result.summary;
+            if (mode === 'starrail_probe') {
+                report.visualSummary = result.summary;
+                if (clientVersion) {
+                    writeClientVersionBaseline(pkg, clientVersion);
+                    report.clientVersionObservation = 'read_only_only_not_task_validated';
+                }
+            }
             else report.verificationFrames = result.verificationFrames;
             report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' :
                 (mode === 'starrail_probe' ? 'read_only_observed_only' : 'single_step_observed_only');
