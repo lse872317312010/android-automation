@@ -27,7 +27,8 @@ Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 u
 - [x] Verify Node 20/22 CI on merged main `88212103efa994ebe07a2d0fed218adbd4e08541`, run #39732916633 (37 tests). Later changes require their own exact-head checks.
 - [ ] Require passing checks in a GitHub main-branch ruleset (admin setting not available in current connector; see QUALITY-GATES.md)
 - [x] Define a pending real-device template and offline validator; synthetic/pending records, artifact mismatches and unsafe outcomes are rejected. A valid operator assertion is only `ready_for_review`; no hardware evidence is supplied by this change.
-- [ ] Add Android emulator app-contract test when Android runtime exists
+- [x] Add Android framework-contract emulator harness (PR #8 merged; Rect/Bitmap/rename and pinned Rhino contracts only)
+- [ ] Complete native UI and production capture/permission/input adapter acceptance (framework contracts alone do not complete T3)
 - [ ] Validate hardware permissions and actual game input on Redmi (M1, never simulated by CI)
 
 Checklist intentionally records a plan; completion of a doc file alone does not mark code/tests complete. Update statuses based on merged CI and physical evidence.
@@ -82,7 +83,7 @@ Version registry, repair API and Personal OS integration are separate deliverabl
 - CI retains synthetic/offline JUnit output for Node 20 and 22. These artifacts
   describe T0/T1, not Android or physical-device results.
 - No Android SDK, adb or emulator was present in the development container at
-  inspection time. T3/T4 remain blocked, and no independent APK was built.
+  inspection time. Full production-adapter T3 and T4 remain pending. PR #8 subsequently added hosted framework instrumentation and test-only APKs; no product APK was built.
 - Main branch-rule enforcement and disposable failing-PR verification remain
   pending. See issue #5 for the remaining P0 work.
 
@@ -97,7 +98,7 @@ Version registry, repair API and Personal OS integration are separate deliverabl
   baseline when replacement rename fails. Owned-image cleanup, write failures,
   duplicate starts, cancellation, cold restart and ignored input are exercised.
 - PR/main CI and candidate CD gain runtime and mutation gates; retain results.
-  These remain T0/T1 evidence. T3 Android and T4 Redmi are still pending.
+  These remain T0/T1 evidence. Hosted framework instrumentation subsequently adds partial T3; full production-adapter T3 and T4 Redmi remain pending.
 
 ## Release sequence
 
@@ -118,3 +119,30 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 - [x] Add code-level pre-tap context rechecks and untrusted timestamp rejection with deterministic zero-input regression fixtures in the proposed change.
 - [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
 - [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.
+
+## Current execution queue (2026-10-22, after framework harness)
+
+1. **M0 stays first.** PR #8 is merged at `807f9b16550282beaa9e69815ac0f8eda6c0bb49`.
+   It adds three native framework tests and 28 shared inert Rhino scenarios, not
+   production screen capture or input acceptance.
+2. PR #9 is open at `3088d28f3382cbba44960c7caadcadb0e35f5990`.
+   Its Node/Rhino gates and API 30 instrumentation/report gate passed
+   ([native run](https://github.com/lse872317312010/android-automation/actions/runs/39806866955)).
+   It adds complete JUnit inventory checks and commit/script-bound CI receipts.
+   These are PR results; do not describe this work as merged.
+3. Next implementation: an unexported, launcher-free native fixture Activity;
+   actual UiAutomation screenshots and one instrumentation pointer gesture;
+   two visual postcondition frames and a closed-fixture zero-input check.
+   This is a separate native UI contract, not a test of AutoJs6 MediaProjection,
+   ML Kit OCR, Shizuku or the JavaScript production adapter. Require all five
+   native testcase identities once these two cases are added. Exact-head CI
+   evidence belongs in the implementation PR before this item is called verified.
+4. Remaining M0 exits: full production capture/permission/foreground/input tests,
+   enforced main branch rules and a disposable red-PR rejection check, plus a
+   deliberately exercised candidate publication path. The connector cannot
+   mutate branch administration; no enforcement is inferred from green CI.
+5. M1 requires a physical Redmi and operator observations using
+   `evidence/README.md`. No physical device is connected to this session.
+   Keep M1, live-game execution, Skill activation and signed production
+   promotion pending. Continue hardware-independent M0 work while these
+   external dependencies remain unavailable.

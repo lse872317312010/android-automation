@@ -1,3 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:label="Automation contract tests" android:allowBackup="false" android:supportsRtl="true" />
+    <application android:label="Automation contract tests" android:allowBackup="false" android:supportsRtl="true">
+        <activity android:name=".FixtureActivity" android:exported="false" />
+    </application>
 </manifest>
