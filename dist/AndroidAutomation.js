@@ -192,8 +192,23 @@ function writeClientVersionBaseline(pkg, version) {
         packageName: pkg, versionCode: version.versionCode,
         versionName: version.versionName, observedAt: new Date().toISOString()}));
     var dest = new java.io.File(clientVersionFile);
-    if (dest.exists()) dest.delete();
+    // Let same-directory rename replace the file; retain the old baseline on
+    // failure instead of deleting it before the replacement is known to work.
     if (!new java.io.File(tmp).renameTo(dest)) throw new Error('VERSION_BASELINE_WRITE_FAILED');
+}
+function diagnosticReason(error) {
+    var allowed = ['EVIDENCE_WRITE_FAILED', 'VERSION_BASELINE_WRITE_FAILED',
+        'SHIZUKU_NOT_AUTHORIZED', 'SHIZUKU_COMMAND_FAILED', 'CAPTURE_PERMISSION_DENIED',
+        'CANCELLED', 'TIMEOUT', 'STAR_RAIL_NOT_FOREGROUND',
+        'GAME_VERSION_CHANGED_RUN_READ_ONLY_PROBE', 'GAME_VERSION_BASELINE_REQUIRED',
+        'FOREGROUND_CHANGED', 'ROTATION_CHANGED', 'INVALID_TAP_COORDINATES',
+        'STALE_FRAME', 'TARGET_NOT_FOUND', 'AMBIGUOUS_TARGET', 'INVALID_BOUNDS',
+        'CAPTURE_GEOMETRY_MISMATCH', 'ALREADY_AT_RESULT', 'UNSTABLE_TARGET',
+        'POSTCONDITION_NOT_MET'];
+    try {
+        var message = String(error && error.message || error);
+        return allowed.indexOf(message) >= 0 ? message : 'RUNTIME_ERROR';
+    } catch (_) { return 'RUNTIME_ERROR'; }
 }
 function shellChecked(command) {
     var result = shizuku(command);
@@ -333,9 +348,8 @@ function start(mode) {
             report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' :
                 (mode === 'starrail_probe' ? 'read_only_observed_only' : 'single_step_observed_only');
         } catch (e) {
-            var message = String(e.message || e);
             report.status = cancelled ? 'cancelled' : 'blocked';
-            report.reason = /^[A-Z_]+$/.test(message) ? message : 'RUNTIME_ERROR';
+            report.reason = cancelled ? 'CANCELLED' : diagnosticReason(e);
             // No raw platform exception, package list, screenshot, UID or OCR text in export.
         } finally {
             report.finishedAt = new Date().toISOString(); report.durationMs = Date.now() - started;

@@ -1,0 +1,269 @@
+[
+  {
+    "name": "fixture success",
+    "options": {},
+    "status": "verified",
+    "taps": 1,
+    "actionCount": 1,
+    "captureStops": 1
+  },
+  {
+    "name": "capture refused",
+    "options": {
+      "allowCapture": false
+    },
+    "status": "blocked",
+    "captureStops": 0,
+    "reason": "CAPTURE_PERMISSION_DENIED"
+  },
+  {
+    "name": "Shizuku denied",
+    "options": {
+      "shizukuOperational": false
+    },
+    "status": "blocked",
+    "captureStops": 0,
+    "reason": "SHIZUKU_NOT_AUTHORIZED"
+  },
+  {
+    "name": "read only",
+    "options": {
+      "foreground": "com.miHoYo.hkrpg"
+    },
+    "status": "observed",
+    "press": "observe",
+    "captureStops": 1
+  },
+  {
+    "name": "late focus switch",
+    "options": {
+      "switchDuringInputPersistence": true
+    },
+    "status": "blocked",
+    "actionCount": 1,
+    "reason": "FOREGROUND_CHANGED"
+  },
+  {
+    "name": "late stop",
+    "options": {
+      "cancelDuringInputPersistence": true
+    },
+    "status": "cancelled",
+    "actionCount": 1,
+    "reason": "CANCELLED"
+  },
+  {
+    "name": "late rotation",
+    "options": {
+      "rotateDuringInputPersistence": true
+    },
+    "status": "blocked",
+    "actionCount": 1,
+    "reason": "ROTATION_CHANGED"
+  },
+  {
+    "name": "stale after persistence",
+    "options": {
+      "inputPersistenceDelay": 2600
+    },
+    "status": "blocked",
+    "actionCount": 1,
+    "reason": "STALE_FRAME"
+  },
+  {
+    "name": "deadline after persistence",
+    "options": {
+      "inputPersistenceDelay": 46000
+    },
+    "status": "blocked",
+    "actionCount": 1,
+    "reason": "TIMEOUT"
+  },
+  {
+    "name": "uncertain input",
+    "options": {
+      "failInput": true
+    },
+    "status": "blocked",
+    "taps": 1,
+    "actionCount": 1,
+    "reason": "SHIZUKU_COMMAND_FAILED"
+  },
+  {
+    "name": "input ignored",
+    "options": {
+      "ignoreInput": true
+    },
+    "status": "blocked",
+    "taps": 1,
+    "reason": "POSTCONDITION_NOT_MET"
+  },
+  {
+    "name": "capture exception privacy",
+    "options": {
+      "captureThrows": true
+    },
+    "status": "blocked",
+    "captureStops": 1,
+    "reason": "RUNTIME_ERROR"
+  },
+  {
+    "name": "OCR exception privacy and cleanup",
+    "options": {
+      "ocrThrows": true
+    },
+    "status": "blocked",
+    "captureStops": 1,
+    "reason": "RUNTIME_ERROR"
+  },
+  {
+    "name": "empty OCR",
+    "options": {
+      "emptyOcr": true
+    },
+    "status": "blocked",
+    "captureStops": 1,
+    "reason": "TARGET_NOT_FOUND"
+  },
+  {
+    "name": "evidence rename failure",
+    "options": {
+      "failEvidenceRename": true
+    },
+    "status": "blocked",
+    "captureStops": 0,
+    "reason": "EVIDENCE_WRITE_FAILED"
+  },
+  {
+    "name": "write failure before action",
+    "options": {
+      "failWriteAt": "action"
+    },
+    "status": "blocked",
+    "captureStops": 1,
+    "reason": "EVIDENCE_WRITE_FAILED"
+  },
+  {
+    "name": "final persistence failure cannot export verified",
+    "options": {
+      "failWriteAt": "final"
+    },
+    "status": "blocked",
+    "taps": 1,
+    "captureStops": 1,
+    "reason": "EVIDENCE_WRITE_FAILED"
+  },
+  {
+    "name": "queued stop and duplicate start",
+    "options": {
+      "deferThread": true
+    },
+    "status": "cancelled",
+    "stopBeforeFlush": true,
+    "repeatStart": true,
+    "reason": "CANCELLED"
+  },
+  {
+    "name": "no baseline means no game input",
+    "options": {
+      "foreground": "com.miHoYo.hkrpg"
+    },
+    "status": "blocked",
+    "press": "game",
+    "reason": "GAME_VERSION_BASELINE_REQUIRED"
+  },
+  {
+    "name": "changed APK blocks input",
+    "options": {
+      "foreground": "com.miHoYo.hkrpg",
+      "initialStore": {
+        "/mock/starrail-client-version.json": "{\"schema\": \"starrail-client-version.v1\", \"packageName\": \"com.miHoYo.hkrpg\", \"versionCode\": \"1\"}"
+      }
+    },
+    "status": "blocked",
+    "press": "game",
+    "reason": "GAME_VERSION_CHANGED_RUN_READ_ONLY_PROBE"
+  },
+  {
+    "name": "failed baseline replacement preserves prior file",
+    "options": {
+      "foreground": "com.miHoYo.hkrpg",
+      "failVersionRename": true,
+      "initialStore": {
+        "/mock/starrail-client-version.json": "{\"schema\": \"starrail-client-version.v1\", \"packageName\": \"com.miHoYo.hkrpg\", \"versionCode\": \"1\"}"
+      }
+    },
+    "status": "blocked",
+    "press": "observe",
+    "baselinePreserved": true,
+    "reason": "VERSION_BASELINE_WRITE_FAILED"
+  },
+  {
+    "name": "cold restart is interrupted",
+    "options": {
+      "initialStore": {
+        "/mock/android-automation-run.json": "{\"status\": \"running\", \"stage\": \"action_requested\", \"actionCount\": 1}"
+      }
+    },
+    "status": "interrupted",
+    "press": null,
+    "reason": "PROCESS_INTERRUPTED"
+  },
+  {
+    "name": "null platform exception",
+    "options": {
+      "shellThrowValue": null
+    },
+    "status": "blocked",
+    "reason": "RUNTIME_ERROR",
+    "captureStops": 0
+  },
+  {
+    "name": "uppercase platform string is not a diagnostic code",
+    "options": {
+      "shellThrowValue": "PRIVATE_TOKEN"
+    },
+    "status": "blocked",
+    "reason": "RUNTIME_ERROR",
+    "captureStops": 0
+  },
+  {
+    "name": "preflight disk failure",
+    "options": {
+      "failWriteAt": "preflight"
+    },
+    "status": "blocked",
+    "reason": "EVIDENCE_WRITE_FAILED",
+    "captureStops": 0
+  },
+  {
+    "name": "OCR report disk failure releases copied image",
+    "options": {
+      "failWriteAt": "observe"
+    },
+    "status": "blocked",
+    "reason": "EVIDENCE_WRITE_FAILED",
+    "captureStops": 1
+  },
+  {
+    "name": "wrong foreground blocks game inspection",
+    "options": {
+      "foreground": "com.other.app"
+    },
+    "press": "observe",
+    "status": "blocked",
+    "reason": "STAR_RAIL_NOT_FOREGROUND"
+  },
+  {
+    "name": "corrupt baseline never enables input",
+    "options": {
+      "foreground": "com.miHoYo.hkrpg",
+      "initialStore": {
+        "/mock/starrail-client-version.json": "not json"
+      }
+    },
+    "press": "game",
+    "status": "blocked",
+    "reason": "GAME_VERSION_BASELINE_REQUIRED"
+  }
+]
