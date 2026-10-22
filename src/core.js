@@ -57,6 +57,23 @@ var VisualLoop = (function () {
             width: last.width, height: last.height, rotation: last.rotation
         }};
     }
+
+    // APK metadata is only an update signal; in-game asset hot patches can occur
+    // without changing Android's versionCode.
+    function parsePackageDump(raw) {
+        var source = String(raw || '');
+        var code = /\bversionCode=(\d+)\b/.exec(source);
+        if (!code) return null;
+        var name = /\bversionName=([^\r\n]*)/.exec(source);
+        var value = name ? name[1].trim().slice(0, 80) : '';
+        return {versionCode: code[1], versionName: value || null};
+    }
+    function versionStatus(current, previous, pkg) {
+        if (!current || !/^\d+$/.test(String(current.versionCode || ''))) return 'unknown';
+        if (!previous || previous.packageName !== pkg ||
+            !/^\d+$/.test(String(previous.versionCode || ''))) return 'first_seen';
+        return String(current.versionCode) === String(previous.versionCode) ? 'unchanged' : 'changed';
+    }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
         function guard() {
@@ -99,6 +116,6 @@ var VisualLoop = (function () {
         }
         fail('POSTCONDITION_NOT_MET');
     }
-    return {normalize: normalize, target: target, expected: expected, probe: probe, run: run};
+    return {normalize: normalize, target: target, expected: expected, probe: probe,\n        parsePackageDump: parsePackageDump, versionStatus: versionStatus, run: run};
 })();
 if (typeof module !== 'undefined') module.exports = VisualLoop;
