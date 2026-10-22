@@ -84,3 +84,10 @@ Version registry, repair API and Personal OS integration are separate deliverabl
 ## Cost and energy
 
 Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energy estimates are **scenario models not Redmi measurements**. M6 must measure task Wh, screenshot/OCR overhead, idle baseline, retry/failed-task overhead and thermal/power throttling before optimizing cloud compute or model choice.
+
+### P0 hardening delta (2026-10-22)
+
+- [x] Review existing hosted CI and candidate CD on `main` (workflow run #35 succeeded, SHA `7ec3c978`).
+- [x] Add code-level pre-tap context rechecks and untrusted timestamp rejection with deterministic zero-input regression fixtures in the proposed change.
+- [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
+- [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.

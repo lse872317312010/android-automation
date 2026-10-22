@@ -118,6 +118,7 @@ function start(mode) {
                 expected: mode === 'fixture' ? ['PASS ' + nonce] : ['画面', '声音', '音量', '分辨率', '帧率'],
                 minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000,
                 expectedExact: mode === 'fixture'};
+            var lastObservedFrame = null;
             var io = {
                 now: function () { return Date.now(); }, sleep: sleep,
                 cancelled: function () { return cancelled; },
@@ -129,6 +130,17 @@ function start(mode) {
                         throw new Error('ROTATION_CHANGED');
                 },
                 tap: function (x, y) {
+                    if (cancelled) throw new Error('CANCELLED');
+                    // Revalidate at the platform boundary, not only at strategy time.
+                    if (String(shizuku.currentPackage()) !== pkg) throw new Error('FOREGROUND_CHANGED');
+                    var currentGeometry = geometry();
+                    if (!lastObservedFrame || currentGeometry.width !== lastObservedFrame.width ||
+                        currentGeometry.height !== lastObservedFrame.height ||
+                        currentGeometry.rotation !== lastObservedFrame.rotation)
+                        throw new Error('ROTATION_CHANGED');
+                    if (!isFinite(x) || !isFinite(y) || Math.floor(x) !== x || Math.floor(y) !== y ||
+                        x < 0 || y < 0 || x >= currentGeometry.width || y >= currentGeometry.height)
+                        throw new Error('INVALID_TAP_COORDINATES');
                     if (cancelled) throw new Error('CANCELLED');
                     report.actionCount = 1; persist(report); // Requested, not necessarily delivered.
                     shellChecked('input tap ' + x + ' ' + y);
@@ -150,6 +162,7 @@ function start(mode) {
                         var frame = {width: Number(img.getWidth()), height: Number(img.getHeight()),
                             displayWidth: g.width, displayHeight: g.height, rotation: g.rotation,
                             capturedAt: at, items: items};
+                        lastObservedFrame = frame;
                         report.frames.push({width: frame.width, height: frame.height, rotation: g.rotation,
                             ocrCount: items.length, captureMs: captureMs, ocrMs: ocrMs,
                             durationMs: Date.now() - at});
