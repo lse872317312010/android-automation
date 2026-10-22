@@ -116,7 +116,7 @@ SRC 的 Python 业务不能直接当 Maa Pipeline 导入。本模块只验证执
 
 ```sh
 node --test test/*.test.cjs
-node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=85 --test-coverage-branches=70 --test-coverage-functions=100 test/*.test.cjs
+node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=100 --test-coverage-branches=90 --test-coverage-functions=100 test/*.test.cjs
 node build.mjs
 node --check dist/AndroidAutomation.js
 git diff --exit-code -- dist/AndroidAutomation.js
