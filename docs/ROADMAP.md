@@ -24,7 +24,8 @@ Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 u
 - [x] Harden GitHub Actions to run all tests on Node 20/22, validate bundles, require coverage (100% lines/functions and >=90% branches for src/core.js)
 - [x] Build reproducible seeded negative/positive scenario tests and fault injection (512 negative + 128 valid + 128 read-only variants)
 - [x] Configure tag-driven **candidate only** CD with SHA256 and generated release notes (workflow committed; actual tag-triggered release not yet exercised)
-- [ ] Obtain green CI on the actual PR head and **merged main SHA** (branch push CI green; pending PR/merge verification)
+- [ ] Obtain green CI on the actual PR head and **merged main SHA** (PR checks green on head prior to latest doc change; final merge check pending)
+- [ ] Require passing checks in a GitHub main-branch ruleset (admin setting not available in current connector; see QUALITY-GATES.md)
 - [ ] Define real-device evidence template & clear `not_established` vs `verified` semantics
 - [ ] Add Android emulator app-contract test when Android runtime exists
 - [ ] Validate hardware permissions and actual game input on Redmi (M1, never simulated by CI)
