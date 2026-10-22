@@ -126,3 +126,49 @@ test('client version drift is isolated from locale/package and missing baselines
     assert.equal(core.versionStatus(current,null,pkg),'first_seen');
     assert.equal(core.versionStatus(null,old,pkg),'unknown');
 });
+
+
+test('pre-tap state persistence cannot bypass foreground, cancel or timeout guards', () => {
+    for (const scenario of ['foreground', 'cancel', 'timeout']) {
+        const t = setup([before(), before(), after(), after()]);
+        const original = t.io.stage;
+        t.io.stage = stage => {
+            original(stage);
+            if (stage !== 'action_requested') return;
+            if (scenario === 'foreground') t.foreground('other.package');
+            if (scenario === 'cancel') t.cancel();
+            if (scenario === 'timeout') t.io.sleep(16000);
+        };
+        const reason = {foreground:'FOREGROUND_CHANGED', cancel:'CANCELLED', timeout:'TIMEOUT'}[scenario];
+        assert.throws(() => core.run(t.io, t.spec), new RegExp(reason), scenario);
+        assert.equal(t.taps(), 0, 'no privileged input after ' + scenario);
+        assert.deepEqual(t.stages, ['action_requested']);
+    }
+});
+
+test('changed geometry on final pre-tap recheck never causes input', () => {
+    const t = setup([before(), before()]);
+    let checks = 0;
+    t.io.checkGeometry = () => {
+        if (++checks === 2) throw new Error('ROTATION_CHANGED');
+    };
+    assert.throws(() => core.run(t.io, t.spec), /ROTATION_CHANGED/);
+    assert.equal(t.taps(), 0);
+    assert.equal(checks, 2);
+});
+
+test('untrusted OCR capture timestamp cannot be missing, malformed or in future', () => {
+    const bad = [undefined, '400', NaN, 30000];
+    for (const value of bad) {
+        const t = setup([before(), before()]);
+        const original = t.io.observe;
+        let observed = 0;
+        t.io.observe = () => {
+            const frame = original();
+            if (++observed === 2) frame.capturedAt = value;
+            return frame;
+        };
+        assert.throws(() => core.run(t.io, t.spec), /STALE_FRAME/);
+        assert.equal(t.taps(), 0, 'no input with capture timestamp ' + String(value));
+    }
+});
