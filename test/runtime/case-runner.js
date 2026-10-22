@@ -18,5 +18,7 @@ function runRuntimeCase(spec) {
         spec.options.initialStore['/mock/starrail-client-version.json'],'baseline preserved');
     if(spec.reason==='RUNTIME_ERROR' && JSON.stringify(report).indexOf('PRIVATE_')>=0)
         throw new Error('raw error escaped diagnostics');
+    if(typeof __jvm!=='undefined' && __jvm && (report.status==='verified' || report.status==='observed'))
+        equal(h.state.javaValues>0,true,'native Java values exercised');
     return {name:spec.name,status:'pass',taps:h.state.tapCommands};
 }

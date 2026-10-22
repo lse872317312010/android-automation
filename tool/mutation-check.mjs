@@ -21,6 +21,10 @@ const mutations=[
 ];
 const cache=path.join(root,'.cache','mutation');fs.mkdirSync(cache,{recursive:true});
 const tests=fs.readdirSync(path.join(root,'test')).filter(x=>x.endsWith('.test.cjs')).map(x=>'test/'+x);
+const baseline=spawnSync(process.execPath,['--test','--test-reporter=tap',...tests],
+    {cwd:root,encoding:'utf8',timeout:20000,maxBuffer:4*1024*1024});
+if(baseline.status!==0 || !/^# tests [1-9][0-9]*$/m.test(baseline.stdout || ''))
+    throw new Error('A passing baseline is required before mutation sensitivity can be measured');
 const results=[];
 for(const mutation of mutations){
     const dir=path.join(cache,mutation.id);fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir);

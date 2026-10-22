@@ -3,7 +3,7 @@ var __host = (function (o) {
     var store = Object.create(null), queue = [], clips = [], clock = 1800000000000, intent = false;
     var state = {foreground:o.foreground || 'autojs6.fixture', tapCommands:0, captureStops:0,
         armed:false, focusChecks:0, geometryChecks:0, clicked:false, rotated:false,
-        copies:0, recycled:0, originalRecycled:0, commands:[]};
+        copies:0, recycled:0, originalRecycled:0, commands:[], javaValues:0};
     var NativeDate = Date;
     function MockDate(v) { return arguments.length ? new NativeDate(v) : new NativeDate(clock); }
     MockDate.now = function () { return clock; };
@@ -76,8 +76,17 @@ var __host = (function (o) {
     var ocr={mlkit:{detect:function(){
         if(o.ocrThrows)throw new Error('PRIVATE_OCR_ERROR');
         if(o.emptyOcr)return [];
-        return [{text:state.foreground==='autojs6.fixture'?(state.clicked?ui.outcome.text:ui.target.text):'设置',
-            confidence:0.99,bounds:{left:100,top:200,right:400,bottom:300}}];
+        var text=state.foreground==='autojs6.fixture'?(state.clicked?ui.outcome.text:ui.target.text):'设置';
+        var item={text:text,confidence:0.99,bounds:{left:100,top:200,right:400,bottom:300}};
+        if(typeof __jvm!=='undefined' && __jvm){
+            // Public int fields and boxed values exercise actual Rhino Java
+            // conversion. Insets is a desktop fixture, not Android Rect.
+            item.text=new __interop.String(text);
+            item.confidence=__interop.Float.valueOf('0.99');
+            item.bounds=new __interop.Insets(200,100,300,400);
+            state.javaValues++;
+        }
+        return [item];
     }}};
     return {globals:{ui:ui,android:android,context:context,images:images,ocr:ocr,files:files,shizuku:shizuku,
         Date:MockDate,activity:{setRequestedOrientation:function(){}},

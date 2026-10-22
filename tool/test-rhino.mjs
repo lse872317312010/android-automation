@@ -28,7 +28,10 @@ const assertion=fs.readFileSync(path.join(root,'test/runtime/case-runner.js'),'u
 const results=[];
 for(const [index,scenario] of scenarios.entries()){
     const script=path.join(cache,`case-${index}.js`);
-    fs.writeFileSync(script,`var __options=${JSON.stringify(scenario.options)};\n${fixture}\n${bundle}\n${assertion}\n`+
+    // Initialize native package aliases before the fixture intentionally shadows
+    // java.io with inert file operations. Lazy package import can reset aliases.
+    const interop='var __interop={String:Packages.java.lang.String,Float:Packages.java.lang.Float,Insets:Packages.java.awt.Insets};';
+    fs.writeFileSync(script,`${interop}\nvar __jvm=true; var __options=${JSON.stringify(scenario.options)};\n${fixture}\n${bundle}\n${assertion}\n`+
         `print(JSON.stringify(runRuntimeCase(${JSON.stringify(scenario)})));\n`);
     const child=spawnSync('java',['-cp',jar,'org.mozilla.javascript.tools.shell.Main','-version',lock.languageVersion,
         '-opt','-1','-f',script],{cwd:root,encoding:'utf8',timeout:15000});

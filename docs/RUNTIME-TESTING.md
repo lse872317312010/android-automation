@@ -47,6 +47,12 @@ The engine run therefore adds real Rhino execution to **T0/T1**, not T3 emulator
 or T4 physical-device acceptance. It does not cover Android Java interop or actual
 thread scheduling, even though it can simulate selected interleavings.
 
+The JVM fixture also supplies real Java String/Float wrappers and an Insets
+object with public integer bounds fields. This exercises generic Rhino Java
+value conversion through the adapter's OCR extraction. Insets is deliberately
+a desktop substitute; it does not establish Android Rect/Bitmap or AutoJs6's
+custom bridge behavior. Successful JVM runs assert that these values were used.
+
 ## Bugs found before hardware
 
 The expanded cases reproduced on the PR #6 baseline:
@@ -67,6 +73,8 @@ missing APK input gate, read-only input capability, one-frame completion,
 duplicate input, stale frame after stage persistence and removed final focus
 check. Each mutant must parse, build, then fail a real test assertion. A timeout,
 missing module or syntax error is a harness error, not a detected regression.
+The mutation runner first requires a passing unmodified baseline, so unrelated
+preexisting failures cannot make the sensitivity check pass.
 All 10 are detected locally. This is targeted sensitivity, **not an exhaustive
 mutation score or proof of zero defects**.
 
