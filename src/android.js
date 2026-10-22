@@ -116,7 +116,8 @@ function start(mode) {
             }
             var spec = {packageName: pkg, target: mode === 'fixture' ? 'TEST ' + nonce : '设置',
                 expected: mode === 'fixture' ? ['PASS ' + nonce] : ['画面', '声音', '音量', '分辨率', '帧率'],
-                minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000};
+                minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000,
+                expectedExact: mode === 'fixture'};
             var io = {
                 now: function () { return Date.now(); }, sleep: sleep,
                 cancelled: function () { return cancelled; },

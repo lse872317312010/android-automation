@@ -1,0 +1,67 @@
+name: Candidate script release (not device verified)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Test + publish candidate (script only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require explicit release-candidate SemVer and main ancestry
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+            echo "Only explicit vX.Y.Z-rc.N candidate tags are supported. Stable releases require device acceptance."
+            exit 1
+          fi
+          git fetch origin main:refs/remotes/origin/main
+          git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax and all mocked-device tests
+        run: |
+          node --check src/core.js
+          node --check src/android.js
+          node --check build.mjs
+          node --test test/*.test.cjs
+          node -e "const m=require('./examples/starrail-skill-manifest.example.json'); if(m.skill.executionEnabled!==false || m.execution.inputBudget.maxActions!==0) process.exit(1)"
+      - name: Coverage gate
+        run: |
+          node --experimental-test-coverage --test \
+            --test-coverage-include=src/core.js \
+            --test-coverage-lines=100 \
+            --test-coverage-branches=90 \
+            --test-coverage-functions=100 \
+            test/*.test.cjs
+      - name: Reproducible script build
+        run: |
+          node build.mjs
+          node --check dist/AndroidAutomation.js
+          git diff --exit-code -- dist/AndroidAutomation.js
+      - name: Build checksum and candidate release notes
+        run: |
+          (cd dist && sha256sum AndroidAutomation.js > SHA256SUMS)
+          printf '%s\n' 'CANDIDATE SCRIPT ONLY: all automated Node policy gates passed.' \
+            'NOT TESTED on a physical Redmi; NOT verified for Star Rail daily automation.' \
+            'Review docs/QUALITY-GATES.md before device use.' > dist/RELEASE-NOTES.txt
+      - name: Publish reproducible pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/AndroidAutomation.js dist/SHA256SUMS dist/RELEASE-NOTES.txt \
+            --prerelease --title "$GITHUB_REF_NAME · candidate script, no device validation" \
+            --notes-file dist/RELEASE-NOTES.txt

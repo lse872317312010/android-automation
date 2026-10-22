@@ -14,11 +14,12 @@ var VisualLoop = (function () {
             b.right <= b.left || b.bottom <= b.top) fail('INVALID_BOUNDS');
         return {x: Math.round((b.left + b.right) / 2), y: Math.round((b.top + b.bottom) / 2)};
     }
-    function expected(frame, labels, min, confidence) {
+    function expected(frame, labels, min, confidence, exact) {
         return labels.filter(function (label) {
             return frame.items.some(function (v) {
-                return isFinite(v.confidence) && v.confidence >= confidence &&
-                    normalize(v.text).indexOf(normalize(label)) >= 0;
+                if (!isFinite(v.confidence) || v.confidence < confidence) return false;
+                var observed = normalize(v.text), needle = normalize(label);
+                return exact === true ? observed === needle : observed.indexOf(needle) >= 0;
             });
         }).length >= min;
     }
@@ -90,11 +91,11 @@ var VisualLoop = (function () {
             return f;
         }
         var a = observe();
-        if (expected(a, spec.expected, spec.minExpected, spec.confidence)) fail('ALREADY_AT_RESULT');
+        if (expected(a, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
         var p = target(a, spec.target, spec.confidence);
         io.sleep(400);
         var b = observe(), q = target(b, spec.target, spec.confidence);
-        if (expected(b, spec.expected, spec.minExpected, spec.confidence)) fail('ALREADY_AT_RESULT');
+        if (expected(b, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
         if (a.width !== b.width || a.height !== b.height || a.rotation !== b.rotation ||
             Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
         guard();
@@ -111,7 +112,7 @@ var VisualLoop = (function () {
             var after = observe();
             if (after.width !== b.width || after.height !== b.height || after.rotation !== b.rotation)
                 fail('ROTATION_CHANGED');
-            consecutive = expected(after, spec.expected, spec.minExpected, spec.confidence) ? consecutive + 1 : 0;
+            consecutive = expected(after, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true) ? consecutive + 1 : 0;
             if (consecutive >= 2) { io.stage('verified'); return {status: 'verified', taps: 1, verificationFrames: 2}; }
         }
         fail('POSTCONDITION_NOT_MET');

@@ -1,24 +1,61 @@
-name: Android visual loop policy
+name: Android Automation - required quality gates
+
 on:
-  pull_request:
-    paths: ['src/**', 'test/**', 'dist/**', 'build.mjs', '.github/workflows/ci.yml']
   push:
-    paths: ['src/**', 'test/**', 'dist/**', 'build.mjs', '.github/workflows/ci.yml']
+  pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   policy:
+    name: Node ${{ matrix.node }} / policy + simulator
     runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: node --test test/core.test.cjs
-      - run: node build.mjs
-      - run: node --check dist/AndroidAutomation.js
-      - run: git diff --exit-code -- dist
+          node-version: ${{ matrix.node }}
+      - name: Verify source/builder JavaScript syntax
+        run: |
+          node --check src/core.js
+          node --check src/android.js
+          node --check build.mjs
+          node --check test/core.test.cjs
+          node --check test/invariants.test.cjs
+      - name: Unit, contract and seeded failure-injection tests
+        run: node --test test/*.test.cjs
+      - name: Assert draft example cannot be executed
+        run: |
+          node -e "const m=require('./examples/starrail-skill-manifest.example.json'); if(m.skill.executionEnabled!==false || m.skill.status!=='draft' || m.execution.inputBudget.maxActions!==0) process.exit(1)"
+      - name: Rebuild distributable from reviewed source
+        run: node build.mjs
+      - name: Verify generated script is syntactically valid
+        run: node --check dist/AndroidAutomation.js
+      - name: Reject stale or manually edited generated artifact
+        run: git diff --exit-code -- dist/AndroidAutomation.js
+      - name: Mandatory coverage gate (pure policy, Node 22)
+        if: matrix.node == 22
+        run: |
+          node --experimental-test-coverage --test \
+            --test-coverage-include=src/core.js \
+            --test-coverage-lines=100 \
+            --test-coverage-branches=90 \
+            --test-coverage-functions=100 \
+            test/*.test.cjs
       - uses: actions/upload-artifact@v4
+        if: matrix.node == 22
         with:
-          name: AndroidAutomation-script
+          name: AndroidAutomation-script-${{ github.sha }}
           path: dist/AndroidAutomation.js
+          retention-days: 14
