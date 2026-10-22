@@ -24,9 +24,9 @@ Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 u
 - [x] Harden GitHub Actions to run all tests on Node 20/22, validate bundles, require coverage (100% lines/functions and >=90% branches for src/core.js)
 - [x] Build reproducible seeded negative/positive scenario tests and fault injection (512 negative + 128 valid + 128 read-only variants)
 - [x] Configure tag-driven **candidate only** CD with SHA256 and generated release notes (workflow committed; actual tag-triggered release not yet exercised)
-- [ ] Obtain green CI on the actual PR head and **merged main SHA** (PR checks green on head prior to latest doc change; final merge check pending)
+- [x] Verify Node 20/22 CI on merged main `88212103efa994ebe07a2d0fed218adbd4e08541`, run #39732916633 (37 tests). Later changes require their own exact-head checks.
 - [ ] Require passing checks in a GitHub main-branch ruleset (admin setting not available in current connector; see QUALITY-GATES.md)
-- [ ] Define real-device evidence template & clear `not_established` vs `verified` semantics
+- [x] Define a pending real-device template and offline validator; synthetic/pending records, artifact mismatches and unsafe outcomes are rejected. A valid operator assertion is only `ready_for_review`; no hardware evidence is supplied by this change.
 - [ ] Add Android emulator app-contract test when Android runtime exists
 - [ ] Validate hardware permissions and actual game input on Redmi (M1, never simulated by CI)
 
@@ -71,6 +71,20 @@ type ExecutionEvidence = {
 ```
 
 Version registry, repair API and Personal OS integration are separate deliverables; none exist in the v0.3 script.
+
+### Current continuation (2026-10-22)
+
+- Added five regressions which fail on baseline `8821210`: report persistence can
+  expire OCR data or allow focus, rotation or cancellation to change just before
+  the adapter submits input. Recheck after the final write and reject stale data.
+- Added seven acceptance-record validator tests. Local suite now has 49 tests;
+  CI evidence for this change must be recorded on its exact PR head.
+- CI retains synthetic/offline JUnit output for Node 20 and 22. These artifacts
+  describe T0/T1, not Android or physical-device results.
+- No Android SDK, adb or emulator was present in the development container at
+  inspection time. T3/T4 remain blocked, and no independent APK was built.
+- Main branch-rule enforcement and disposable failing-PR verification remain
+  pending. See issue #5 for the remaining P0 work.
 
 ## Release sequence
 

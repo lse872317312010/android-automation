@@ -77,6 +77,11 @@ var VisualLoop = (function () {
     }
     function run(io, spec) {
         var deadline = io.now() + spec.timeoutMs;
+        function fresh(frame) {
+            var age = io.now() - frame.capturedAt;
+            if (typeof frame.capturedAt !== 'number' || !isFinite(age) || age < 0 || age > 2500)
+                fail('STALE_FRAME');
+        }
         function guard() {
             if (io.cancelled()) fail('CANCELLED');
             if (io.now() > deadline) fail('TIMEOUT');
@@ -100,9 +105,7 @@ var VisualLoop = (function () {
             Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
         guard();
         // Do not act on an OCR result that took too long to produce.
-        var frameAge = io.now() - b.capturedAt;
-        if (typeof b.capturedAt !== 'number' || !isFinite(frameAge) ||
-            frameAge < 0 || frameAge > 2500) fail('STALE_FRAME');
+        fresh(b);
         io.checkGeometry(b);
         guard();
         io.stage('action_requested');
@@ -110,6 +113,7 @@ var VisualLoop = (function () {
         guard();
         io.checkGeometry(b);
         guard();
+        fresh(b);
         io.tap(q.x, q.y); // Never retry an uncertain or failed injection.
         io.stage('verifying');
         var consecutive = 0;

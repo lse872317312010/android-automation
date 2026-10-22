@@ -34,8 +34,21 @@ jobs:
           node --check test/core.test.cjs
           node --check test/invariants.test.cjs
           node --check test/host.test.cjs
+          node --check test/acceptance.test.cjs
+          node --check tool/validate-acceptance.cjs
       - name: Unit, contract and seeded failure-injection tests
-        run: node --test test/*.test.cjs
+        run: |
+          mkdir -p test-results
+          node --test --test-reporter=spec --test-reporter=junit \
+            --test-reporter-destination=stdout \
+            --test-reporter-destination=test-results/junit.xml test/*.test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-test-results-node-${{ matrix.node }}-${{ github.sha }}
+          path: test-results/junit.xml
+          if-no-files-found: warn
+          retention-days: 14
       - name: Assert draft example cannot be executed
         run: |
           node -e "const m=require('./examples/starrail-skill-manifest.example.json'); if(m.skill.executionEnabled!==false || m.skill.status!=='draft' || m.execution.inputBudget.maxActions!==0) process.exit(1)"

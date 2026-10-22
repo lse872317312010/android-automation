@@ -1,0 +1,123 @@
+{
+  "schema": "android-automation.acceptance.v1",
+  "environment": "physical_redmi",
+  "synthetic": true,
+  "commit": null,
+  "scriptSha256": null,
+  "operatorObserved": false,
+  "fixtureUnassisted": false,
+  "cases": [
+    {
+      "scenario": "fixture",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "capture_denied",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "shizuku_denied",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "foreground_switch",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "rotation",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "stop",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "cold_restart",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "fixture",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    },
+    {
+      "scenario": "starrail_read_only",
+      "result": "pending",
+      "observedInputCount": null,
+      "run": {
+        "runId": null,
+        "mode": "starrail_probe",
+        "status": null,
+        "reason": null,
+        "actionCount": null,
+        "verificationFrames": null,
+        "deviceValidation": "not_established"
+      }
+    }
+  ]
+}

@@ -13,6 +13,11 @@ function fakeHost(options = {}) {
         tapCommands: 0, captureStops: 0, armed: false, focusChecks: 0,
         geometryChecks: 0, clicked: false
     };
+    let clock = 1800000000000, actionPersisted = false;
+    class MockDate extends Date {
+        constructor(...args) { super(...(args.length ? args : [clock])); }
+        static now() { return clock; }
+    }
     function control(initial = '') {
         return {
             text: initial, handlers: {},
@@ -42,6 +47,14 @@ function fakeHost(options = {}) {
         write: (name, value) => {
             const serialized = String(value);
             store.set(String(name), serialized);
+            const record = JSON.parse(serialized);
+            if (!actionPersisted && record.status === 'running' && record.actionCount === 1) {
+                actionPersisted = true;
+                if (options.switchDuringInputPersistence) state.foreground = 'com.other.app';
+                if (options.cancelDuringInputPersistence) ui.stop.handlers.click();
+                if (options.rotateDuringInputPersistence) state.rotated = true;
+                clock += options.inputPersistenceDelay || 0;
+            }
             if (!state.armed && serialized.includes('"stage": "action_requested"')) {
                 state.armed = true;
                 state.focusChecks = 0;
@@ -87,6 +100,7 @@ function fakeHost(options = {}) {
                     metrics.heightPixels = 2400;
                 },
                 getRotation: () => {
+                    if (state.rotated) return 1;
                     if (state.armed && options.lateRotation) {
                         if (++state.geometryChecks >= 2) return 1;
                     }
@@ -128,6 +142,7 @@ function fakeHost(options = {}) {
         toast() {}, setClip() {},
         console
     };
+    sandbox.Date = MockDate;
     vm.createContext(sandbox);
     const root = path.join(__dirname, '..');
     vm.runInContext(fs.readFileSync(path.join(root, 'src/core.js'), 'utf8'), sandbox,
@@ -201,4 +216,17 @@ test('unknown Shizuku input result is recorded and not retried', () => {
     assert.equal(h.report().reason, 'SHIZUKU_COMMAND_FAILED');
     assert.equal(h.report().actionCount, 1);
     assert.equal(h.state.tapCommands, 1);
+});
+
+for (const [option, reason] of [
+    ['switchDuringInputPersistence', 'FOREGROUND_CHANGED'],
+    ['cancelDuringInputPersistence', 'CANCELLED'],
+    ['rotateDuringInputPersistence', 'ROTATION_CHANGED'],
+    ['inputPersistenceDelay', 'STALE_FRAME']
+]) test('input report persistence cannot bypass ' + option, () => {
+    const h = fakeHost({[option]: option === 'inputPersistenceDelay' ? 2600 : true});
+    h.press('selftest');
+    assert.equal(h.report().reason, reason);
+    assert.equal(h.state.tapCommands, 0);
+    assert.equal(h.report().actionCount, 1); // Intent persisted; no command delivered.
 });
