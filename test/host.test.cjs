@@ -42,7 +42,7 @@ function fakeHost(options = {}) {
         write: (name, value) => {
             const serialized = String(value);
             store.set(String(name), serialized);
-            if (serialized.includes('"stage": "action_requested"')) {
+            if (!state.armed && serialized.includes('"stage": "action_requested"')) {
                 state.armed = true;
                 state.focusChecks = 0;
                 state.geometryChecks = 0;
