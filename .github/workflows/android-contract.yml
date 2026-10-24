@@ -107,13 +107,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: milestone-${{ github.sha }}
         run: |
-          gh release create "$RELEASE_TAG" \\
-            release-assets/AndroidAutomation-milestone.apk \\
-            release-assets/AndroidAutomation.js \\
-            release-assets/android-framework.json \\
-            release-assets/COMMIT.txt \\
-            release-assets/SHA256SUMS \\
-            release-assets/README.txt \\
-            --repo "$GITHUB_REPOSITORY" --prerelease \\
-            --title "Android Automation milestone ${GITHUB_SHA:0:12}" \\
+          gh release create "$RELEASE_TAG" \
+            release-assets/AndroidAutomation-milestone.apk \
+            release-assets/AndroidAutomation.js \
+            release-assets/android-framework.json \
+            release-assets/COMMIT.txt \
+            release-assets/SHA256SUMS \
+            release-assets/README.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Android Automation milestone ${GITHUB_SHA:0:12}" \
             --notes "CI-tested milestone APK for commit $GITHUB_SHA. Verify SHA256SUMS. Debug signature; reinstall may be required for later milestones. This is not Redmi or live-game verified."
