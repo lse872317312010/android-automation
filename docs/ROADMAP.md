@@ -151,7 +151,6 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 At the user's request, every completed development milestone must include a
 downloadable APK, commit identity, SHA256SUMS and validation scope. The current
-milestone adds a launcher, manual fixture and bundled-script export. Successful
-emulator CI uploads a debug APK artifact for 30 days. Native automation host,
+milestone adds a launcher, manual fixture and bundled-script export. Successful main-branch CI publishes a debug APK prerelease in GitHub Releases, with its SHA256SUMS and validation receipt. Native automation host,
 long-term release signing and Redmi/game acceptance remain pending; no APK
 build alone completes M0/M1. PR #9/#10 are still open at this inspection.

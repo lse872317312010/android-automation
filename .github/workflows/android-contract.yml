@@ -3,7 +3,7 @@ on:
   pull_request:
     paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   push:
-    branches: ['main', 'test/android-framework-harness']
+    branches: ['main']
     paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   workflow_dispatch:
 permissions:
@@ -88,3 +88,32 @@ jobs:
             test-results/android-framework.json
           if-no-files-found: warn
           retention-days: 14
+
+  release:
+    name: Publish tested milestone APK Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: framework
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: AndroidAutomation-milestone-${{ github.sha }}
+          path: release-assets
+      - name: Publish immutable milestone release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: milestone-${{ github.sha }}
+        run: |
+          gh release create "$RELEASE_TAG" \\
+            release-assets/AndroidAutomation-milestone.apk \\
+            release-assets/AndroidAutomation.js \\
+            release-assets/android-framework.json \\
+            release-assets/COMMIT.txt \\
+            release-assets/SHA256SUMS \\
+            release-assets/README.txt \\
+            --repo "$GITHUB_REPOSITORY" --prerelease \\
+            --title "Android Automation milestone ${GITHUB_SHA:0:12}" \\
+            --notes "CI-tested milestone APK for commit $GITHUB_SHA. Verify SHA256SUMS. Debug signature; reinstall may be required for later milestones. This is not Redmi or live-game verified."

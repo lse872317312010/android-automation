@@ -67,3 +67,9 @@ use AutoJs6 to execute that script. Manual PASS is not automated acceptance.
 The instrumentation APK is not delivered to phone users. Debug signing is temporary
 and does not establish an upgrade identity; replacing a differently signed build
 may require uninstall/reinstall. This is not the signed production automation host.
+
+On pushes to `main`, after the native emulator job succeeds, CI publishes these
+same files as a prerelease in GitHub Releases tagged `milestone-<full commit SHA>`.
+PR builds still retain short-lived Actions artifacts for review; the user-facing
+installation link is the published GitHub Release. Each milestone is immutable
+and includes `SHA256SUMS`. It remains a debug-signed prerelease, not stable-signed.
