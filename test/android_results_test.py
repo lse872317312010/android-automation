@@ -31,7 +31,7 @@ class NativeResultTests(unittest.TestCase):
 
     def test_complete_inventory(self):
         self.report()
-        self.assertEqual(module.validate(self.directory), 3)
+        self.assertEqual(module.validate(self.directory), 5)
 
     def test_missing_report(self):
         with self.assertRaises(ValueError):
@@ -90,7 +90,7 @@ class NativeResultTests(unittest.TestCase):
         self.assertEqual(receipt["commit"], "a" * 40)
         self.assertEqual(receipt["scriptSha256"], hashlib.sha256(bundle.read_bytes()).hexdigest())
         self.assertEqual(receipt["deviceValidation"], "not_established")
-        self.assertEqual(receipt["testCount"], 3)
+        self.assertEqual(receipt["testCount"], 5)
         self.report(outcome="skipped")
         child = subprocess.run(command, capture_output=True, text=True)
         self.assertNotEqual(child.returncode, 0)

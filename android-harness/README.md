@@ -17,6 +17,10 @@ Tests:
    or send a gesture, and is not an end-to-end AutoJs6 test.
 2. Check real Bitmap copy/recycle ownership with Android framework objects.
 3. Check actual app-private File.renameTo replacement/failure preservation.
+4. Open an unexported native fixture Activity, capture its actual emulator pixels,
+   inject one DOWN/UP gesture with Instrumentation, verify the unique PASS token
+   in the native view and the changed panel color in two screenshots.
+5. Close the fixture and confirm the fixture input helper refuses a gesture.
 
 This is a partial T3 framework contract, not T3 capture/permission acceptance,
 T4 physical Redmi acceptance, OCR accuracy or actual game validation. Do not
@@ -37,9 +41,18 @@ hashes are checked by `tool/test-rhino.mjs`. It is not checked into this reposit
 Native output is synthetic test evidence. APKs are not uploaded or released by
 this workflow; source provenance is in `test/runtime/rhino-lock.json`.
 
-The workflow also requires the exact three native JUnit testcase identities,
+The workflow also requires the exact five native JUnit testcase identities,
 with no missing, duplicate, skipped, failed or unexpected cases. A separate
 Python standard-library validator has negative report fixtures in the ordinary
 CI suite. On success, `test-results/android-framework.json` records the checkout
 commit, script SHA-256, API level and partial-T3 scope; it is a CI-generated
 receipt, not hardware attestation. Failed validation removes an older receipt.
+
+The native UI tests use a dedicated Activity with no launcher or exported entry.
+Only instrumentation starts it. Screenshots stay in memory and are recycled;
+no screenshot files, OCR text or input permissions are added to the app manifest.
+The existing 28 bundled-script scenarios still use inert capture/OCR/input.
+The new UI tests use Android Instrumentation and UiAutomation directly; they
+do not execute the production JavaScript adapter. The PASS token is read from
+the native view, not recognized by OCR. Focus checks are best-effort, not atomic
+with Android input dispatch. Run only on the dedicated disposable CI emulator.

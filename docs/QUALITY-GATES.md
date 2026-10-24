@@ -30,7 +30,7 @@ Absolute zero defects in arbitrary code or game/OEM versions is **not demonstrab
 | T5 | Live Star Rail bounded scenarios | Actual task entry/exit, benign input, semantically verified outcome, compatibility | Every future hot update/game server event | Required before any claim of game daily support |
 | T6 | AI candidate repair evaluation | Safe suggestion format, replay, rollback/approval controls | Safe autonomous production deployment | Planned before AI feature goes live |
 
-The current code covers **T0/T1 only** and has no T2/T3/T4/T5/T6 validation evidence. GitHub Actions is not a physical-device test.
+The merged code covers T0/T1 and a **partial T3 framework harness** (PR #8: real Rect/Bitmap/rename contracts on API 30, with capture/OCR/input substituted). Full production-adapter T3 and T2/T4/T5/T6 remain unverified. See [current execution queue](ROADMAP.md#current-execution-queue-2026-10-22-after-framework-harness) and [harness scope](../android-harness/README.md). GitHub Actions is not a physical-device test.
 
 ## CI policy to implement immediately
 
