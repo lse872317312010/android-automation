@@ -33,6 +33,14 @@ public class FrameworkContractTest {
         }
     }
     @Test public void shippedBundleWithAndroidValues() throws Exception {
+        try (var in = InstrumentationRegistry.getInstrumentation().getTargetContext().getAssets().open("AndroidAutomation.js")) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = in.read(buffer)) != -1) bytes.write(buffer, 0, count);
+            assertEquals("Exported script must match tested bundle", asset("AndroidAutomation.js"),
+                new String(bytes.toByteArray(), StandardCharsets.UTF_8));
+        }
         JSONArray cases = new JSONArray(asset("cases.json"));
         assertEquals(28, cases.length());
         for (int i = 0; i < cases.length(); i++) {

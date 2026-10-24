@@ -1,4 +1,4 @@
-name: Android framework contracts (emulator, no device input)
+name: Android milestone APK and emulator contracts
 on:
   pull_request:
     paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
@@ -60,6 +60,23 @@ jobs:
             --results android-harness/app/build/outputs/androidTest-results/connected \
             --bundle dist/AndroidAutomation.js --commit "$EVIDENCE_COMMIT" --api 30 \
             --output test-results/android-framework.json
+      - name: Package milestone APK and provenance
+        env:
+          MILESTONE_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p milestone
+          cp android-harness/app/build/outputs/apk/debug/app-debug.apk milestone/AndroidAutomation-milestone.apk
+          cp dist/AndroidAutomation.js milestone/AndroidAutomation.js
+          cp test-results/android-framework.json milestone/
+          printf '%s\n' "$MILESTONE_COMMIT" > milestone/COMMIT.txt
+          printf '%s\n' 'Debug-signed milestone: manual fixture + script export. AutoJs6 runtime still required.' 'Not Redmi/game verified. Debug signing is ephemeral; later builds may require reinstall.' > milestone/README.txt
+          (cd milestone && sha256sum AndroidAutomation-milestone.apk AndroidAutomation.js android-framework.json COMMIT.txt README.txt > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndroidAutomation-milestone-${{ github.sha }}
+          path: milestone/
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:

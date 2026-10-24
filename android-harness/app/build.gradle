@@ -7,13 +7,14 @@ android {
         minSdk 26
         targetSdk 35
         versionCode 1
-        versionName '0.1-test-only'
+        versionName '0.2-milestone'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/milestoneAssets')
     sourceSets.androidTest.assets.srcDir layout.buildDirectory.dir('generated/contractAssets')
     packaging.resources.excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
 }
@@ -30,4 +31,12 @@ tasks.register('stageContractAssets', Sync) {
 }
 tasks.configureEach {
     if (name == 'mergeDebugAndroidTestAssets') dependsOn 'stageContractAssets'
+}
+
+tasks.register('stageMilestoneAssets', Sync) {
+    from(new File(repoRoot, 'dist')) { include 'AndroidAutomation.js' }
+    into layout.buildDirectory.dir('generated/milestoneAssets')
+}
+tasks.configureEach {
+    if (name == 'mergeDebugAssets') dependsOn 'stageMilestoneAssets'
 }
