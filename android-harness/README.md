@@ -36,3 +36,10 @@ The dependency is downloaded from the pinned AutoJs6 upstream commit and both
 hashes are checked by `tool/test-rhino.mjs`. It is not checked into this repository.
 Native output is synthetic test evidence. APKs are not uploaded or released by
 this workflow; source provenance is in `test/runtime/rhino-lock.json`.
+
+The workflow also requires the exact three native JUnit testcase identities,
+with no missing, duplicate, skipped, failed or unexpected cases. A separate
+Python standard-library validator has negative report fixtures in the ordinary
+CI suite. On success, `test-results/android-framework.json` records the checkout
+commit, script SHA-256, API level and partial-T3 scope; it is a CI-generated
+receipt, not hardware attestation. Failed validation removes an older receipt.
