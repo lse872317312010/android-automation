@@ -130,13 +130,12 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
    ([native run](https://github.com/lse872317312010/android-automation/actions/runs/39806866955)).
    It adds complete JUnit inventory checks and commit/script-bound CI receipts.
    These are PR results; do not describe this work as merged.
-3. Next implementation: an unexported, launcher-free native fixture Activity;
-   actual UiAutomation screenshots and one instrumentation pointer gesture;
-   two visual postcondition frames and a closed-fixture zero-input check.
-   This is a separate native UI contract, not a test of AutoJs6 MediaProjection,
-   ML Kit OCR, Shizuku or the JavaScript production adapter. Require all five
-   native testcase identities once these two cases are added. Exact-head CI
-   evidence belongs in the implementation PR before this item is called verified.
+3. PR #10 implements the native fixture Activity, UiAutomation screenshots,
+   one bounded pointer gesture, two visual postcondition frames and a closed-fixture
+   zero-input check. All five native cases passed on API 30 at source head
+   `1131d90e0f478673215713d4b3d822b7b68fb6ca` (run #39811427742). This is partial
+   native UI evidence; it does not exercise AutoJs6 MediaProjection, ML Kit OCR,
+   Shizuku or the JavaScript production adapter. Keep those gates pending.
 4. Remaining M0 exits: full production capture/permission/foreground/input tests,
    enforced main branch rules and a disposable red-PR rejection check, plus a
    deliberately exercised candidate publication path. The connector cannot
