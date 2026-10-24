@@ -1,6 +1,6 @@
 # Android Automation · 本地视觉执行器 0.3（星铁 APK 版本漂移保护）
 
-截至 2026-10-22：**脚本已有纯 JS 离线验证；尚未在 Redmi 或模拟器实际验收。**
+截至 2026-10-22：**已有 Node/Rhino 验证和部分 Android 模拟器框架测试；AutoJs6 截图/OCR/Shizuku 完整链路及 Redmi 真机仍未验收。**
 交付形态是官方 AutoJs6 APK + 单个脚本，不是新编译的 Personal OS 独立 APK。
 
 ## 工程路线与质量门禁（先测试，后开发）

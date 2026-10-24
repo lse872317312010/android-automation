@@ -8,6 +8,8 @@ import xml.etree.ElementTree as ET
 
 CLASS = "dev.androidautomation.harness.FrameworkContractTest"
 EXPECTED = {
+    "fixtureScreenshotAndSingleInjectedTap",
+    "closedFixtureRejectsInput",
     "shippedBundleWithAndroidValues",
     "ownedBitmapCopyCanBeRecycledWithoutInvalidatingSource",
     "privateDirectoryRenameRetainsBaselineOnFailure",
