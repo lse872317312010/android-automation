@@ -12,6 +12,35 @@ concurrency:
   group: android-contract-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  quality:
+    name: Node ${{ matrix.node }} / required policy suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate evidence tooling
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
+      - name: Run policy and fault-injection suite
+        run: node --test test/*.test.cjs
+      - name: Verify generated AutoJs6 bundle
+        run: |
+          node build.mjs
+          node --check dist/AndroidAutomation.js
+          git diff --exit-code -- dist/AndroidAutomation.js
+      - name: Coverage gate (Node 22)
+        if: matrix.node == 22
+        run: node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=100 --test-coverage-branches=90 --test-coverage-functions=100 test/*.test.cjs
+      - name: Mutation gate (Node 22)
+        if: matrix.node == 22
+        run: node tool/mutation-check.mjs
+
   framework:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -92,7 +121,7 @@ jobs:
   release:
     name: Publish tested milestone APK Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: framework
+    needs: [framework, quality]
     runs-on: ubuntu-latest
     permissions:
       contents: write
