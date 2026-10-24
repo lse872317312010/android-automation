@@ -1,9 +1,9 @@
-name: Android framework contracts (emulator, no device input)
+name: Android milestone APK and emulator contracts
 on:
   pull_request:
     paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   push:
-    branches: ['main', 'test/android-framework-harness']
+    branches: ['main']
     paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   workflow_dispatch:
 permissions:
@@ -12,6 +12,35 @@ concurrency:
   group: android-contract-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  quality:
+    name: Node ${{ matrix.node }} / required policy suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate evidence tooling
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
+      - name: Run policy and fault-injection suite
+        run: node --test test/*.test.cjs
+      - name: Verify generated AutoJs6 bundle
+        run: |
+          node build.mjs
+          node --check dist/AndroidAutomation.js
+          git diff --exit-code -- dist/AndroidAutomation.js
+      - name: Coverage gate (Node 22)
+        if: matrix.node == 22
+        run: node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=100 --test-coverage-branches=90 --test-coverage-functions=100 test/*.test.cjs
+      - name: Mutation gate (Node 22)
+        if: matrix.node == 22
+        run: node tool/mutation-check.mjs
+
   framework:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -60,6 +89,23 @@ jobs:
             --results android-harness/app/build/outputs/androidTest-results/connected \
             --bundle dist/AndroidAutomation.js --commit "$EVIDENCE_COMMIT" --api 30 \
             --output test-results/android-framework.json
+      - name: Package milestone APK and provenance
+        env:
+          MILESTONE_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p milestone
+          cp android-harness/app/build/outputs/apk/debug/app-debug.apk milestone/AndroidAutomation-milestone.apk
+          cp dist/AndroidAutomation.js milestone/AndroidAutomation.js
+          cp test-results/android-framework.json milestone/
+          printf '%s\n' "$MILESTONE_COMMIT" > milestone/COMMIT.txt
+          printf '%s\n' 'Debug-signed milestone: manual fixture + script export. AutoJs6 runtime still required.' 'Not Redmi/game verified. Debug signing is ephemeral; later builds may require reinstall.' > milestone/README.txt
+          (cd milestone && sha256sum AndroidAutomation-milestone.apk AndroidAutomation.js android-framework.json COMMIT.txt README.txt > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndroidAutomation-milestone-${{ github.sha }}
+          path: milestone/
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -71,3 +117,32 @@ jobs:
             test-results/android-framework.json
           if-no-files-found: warn
           retention-days: 14
+
+  release:
+    name: Publish tested milestone APK Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [framework, quality]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: AndroidAutomation-milestone-${{ github.sha }}
+          path: release-assets
+      - name: Publish immutable milestone release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: milestone-${{ github.sha }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            release-assets/AndroidAutomation-milestone.apk \
+            release-assets/AndroidAutomation.js \
+            release-assets/android-framework.json \
+            release-assets/COMMIT.txt \
+            release-assets/SHA256SUMS \
+            release-assets/README.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Android Automation milestone ${GITHUB_SHA:0:12}" \
+            --notes "CI-tested milestone APK for commit $GITHUB_SHA. Verify SHA256SUMS. Debug signature; reinstall may be required for later milestones. This is not Redmi or live-game verified."
