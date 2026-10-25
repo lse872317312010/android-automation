@@ -3,17 +3,19 @@ var __host = (function (o) {
     var store = Object.create(null), queue = [], clips = [], clock = 1800000000000, intent = false;
     var state = {foreground:o.foreground || 'autojs6.fixture', tapCommands:0, captureStops:0,
         armed:false, focusChecks:0, geometryChecks:0, clicked:false, rotated:false,
-        copies:0, recycled:0, originalRecycled:0, commands:[], javaValues:0};
+        captures:0, orientationRequests:0, copies:0, recycled:0, originalRecycled:0, commands:[], javaValues:0};
     var NativeDate = Date;
     function MockDate(v) { return arguments.length ? new NativeDate(v) : new NativeDate(clock); }
     MockDate.now = function () { return clock; };
     MockDate.parse = NativeDate.parse; MockDate.UTC = NativeDate.UTC;
     Object.keys(o.initialStore || {}).forEach(function (k) { store[k] = o.initialStore[k]; });
-    function control(text) { return {text:text || '', handlers:{}, enabled:true,
-        setText:function(v) { this.text=String(v); }, setEnabled:function(v) { this.enabled=v; },
+    function control(text) { return {text:text || '', handlers:{}, enabled:true, history:[],
+        setText:function(v) { this.text=String(v); this.history.push(this.text); },
+        setEnabled:function(v) { this.enabled=v; },
         on:function(e,f) { this.handlers[e]=f; }}; }
     var ui={target:control('WAIT'), outcome:control('READY'), status:control(), selftest:control(),
-        observe:control(), game:control(), stop:control(), copy:control(), layout:function(){}, run:function(f){f();}};
+        rotation:control(), observe:control(), game:control(), stop:control(), copy:control(),
+        layout:function(){}, run:function(f){f();}};
     function File(p) { this.path=String(p); }
     File.prototype.exists=function(){return Object.prototype.hasOwnProperty.call(store,this.path);};
     File.prototype.delete=function(){var existed=this.exists();delete store[this.path];return existed;};
@@ -62,15 +64,19 @@ var __host = (function (o) {
     var context={getFilesDir:function(){return '/mock';},getPackageName:function(){return 'autojs6.fixture';},
         getPackageManager:function(){return {getPackageInfo:function(){return {versionName:'6.7.0'};}};},
         getSystemService:function(){return {getDefaultDisplay:function(){return {
-            getRealMetrics:function(m){m.widthPixels=1080;m.heightPixels=2400;},
+            getRealMetrics:function(m){
+                m.widthPixels=state.rotated?2400:1080;
+                m.heightPixels=state.rotated?1080:2400;
+            },
             getRotation:function(){
                 if(state.rotated || (state.armed && o.lateRotation && ++state.geometryChecks>=2)) return 1;
                 return 0;
             }};}};}};
-    var original={getWidth:function(){return 1080;},getHeight:function(){return 2400;},
+    var original={getWidth:function(){return state.rotated?2400:1080;},
+        getHeight:function(){return state.rotated?1080:2400;},
         recycle:function(){state.originalRecycled++;}};
     var images={requestScreenCapture:function(){return o.allowCapture!==false;},
-        captureScreen:function(){if(o.captureThrows)throw new Error('PRIVATE_CAPTURE_ERROR');return original;},
+        captureScreen:function(){state.captures++;if(o.captureThrows)throw new Error('PRIVATE_CAPTURE_ERROR');return original;},
         copy:function(){state.copies++;return {getWidth:original.getWidth,getHeight:original.getHeight,
             recycle:function(){state.recycled++;}};},stopScreenCapture:function(){state.captureStops++;}};
     var ocr={mlkit:{detect:function(){
@@ -89,10 +95,13 @@ var __host = (function (o) {
         return [item];
     }}};
     return {globals:{ui:ui,android:android,context:context,images:images,ocr:ocr,files:files,shizuku:shizuku,
-        Date:MockDate,activity:{setRequestedOrientation:function(){}},
+        Date:MockDate,activity:{setRequestedOrientation:function(){state.orientationRequests++;}},
         java:{io:{File:File},util:{UUID:{randomUUID:function(){return '00112233-4455-6677-8899-aabbccddeeff';}}}},
         threads:{start:function(f){if(o.deferThread)queue.push(f);else f();}},
-        sleep:function(ms){clock+=ms;},toast:function(){},setClip:function(s){clips.push(s);}},
+        sleep:function(ms){
+            clock+=ms;
+            if(o.rotateAfterFirstCapture && state.captures>0) state.rotated=true;
+        },toast:function(){},setClip:function(s){clips.push(s);}},
         press:function(n){ui[n].handlers.click();},flush:function(){while(queue.length)queue.shift()();},
         report:function(){return JSON.parse(store['/mock/android-automation-run.json']);},
         stored:function(p){return store[p];},state:state,ui:ui,clips:clips};

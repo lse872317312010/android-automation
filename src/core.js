@@ -98,11 +98,12 @@ var VisualLoop = (function () {
         var a = observe();
         if (expected(a, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
         var p = target(a, spec.target, spec.confidence);
-        io.sleep(400);
+        io.sleep(spec.confirmationDelayMs || 400);
         var b = observe(), q = target(b, spec.target, spec.confidence);
         if (expected(b, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
-        if (a.width !== b.width || a.height !== b.height || a.rotation !== b.rotation ||
-            Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
+        if (a.width !== b.width || a.height !== b.height || a.rotation !== b.rotation)
+            fail('ROTATION_CHANGED');
+        if (Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
         guard();
         // Do not act on an OCR result that took too long to produce.
         fresh(b);

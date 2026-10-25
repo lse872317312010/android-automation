@@ -26,6 +26,21 @@ test('AutoJs6 mock host completes fixture only with one input and independent OC
     assert.equal(JSON.stringify(r).includes('TEST '), false);
 });
 
+test('AutoJs6 fixture leaves display orientation unlocked', () => {
+    const h=fakeHost();
+    assert.equal(h.state.orientationRequests, 0);
+});
+
+test('dedicated rotation fixture detects geometry drift before requesting input', () => {
+    const h=fakeHost({rotateAfterFirstCapture: true});
+    h.press('rotation');
+    assert.equal(h.report().status, 'blocked');
+    assert.equal(h.report().reason, 'ROTATION_CHANGED');
+    assert.equal(h.report().actionCount, 0);
+    assert.equal(h.state.tapCommands, 0);
+    assert.ok(h.ui.status.history.some(s => s.indexOf('8 秒内旋转手机') >= 0));
+});
+
 test('mock read-only Star Rail probe cannot dispatch input', () => {
     const h = fakeHost({foreground: 'com.miHoYo.hkrpg'});
     h.press('observe');

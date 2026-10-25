@@ -100,11 +100,12 @@ var VisualLoop = (function () {
         var a = observe();
         if (expected(a, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
         var p = target(a, spec.target, spec.confidence);
-        io.sleep(400);
+        io.sleep(spec.confirmationDelayMs || 400);
         var b = observe(), q = target(b, spec.target, spec.confidence);
         if (expected(b, spec.expected, spec.minExpected, spec.confidence, spec.expectedExact === true)) fail('ALREADY_AT_RESULT');
-        if (a.width !== b.width || a.height !== b.height || a.rotation !== b.rotation ||
-            Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
+        if (a.width !== b.width || a.height !== b.height || a.rotation !== b.rotation)
+            fail('ROTATION_CHANGED');
+        if (Math.abs(p.x - q.x) > 8 || Math.abs(p.y - q.y) > 8) fail('UNSTABLE_TARGET');
         guard();
         // Do not act on an OCR result that took too long to produce.
         fresh(b);
@@ -140,13 +141,13 @@ var evidenceFile = String(context.getFilesDir()) + '/android-automation-run.json
 var clientVersionFile = String(context.getFilesDir()) + '/starrail-client-version.json';
 var nonce = String(Math.floor(100000 + Math.random() * 900000));
 var clicked = false;
-activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 ui.layout('<vertical padding="20" bg="#FFFFFF">' +
     '<text text="Android Automation · 视觉闭环 0.3" textSize="23sp" textColor="#14213D"/>' +
     '<text text="先运行自测。授权截图时选择整个屏幕。每次运行最多点击一次。" textSize="16sp" marginTop="12"/>' +
     '<button id="selftest" text="1. 开始本机闭环自测" marginTop="12"/>' +
-    '<button id="observe" text="2. 星铁只读截图/识别诊断（绝不点击）"/>' +
-    '<button id="game" text="3. 星铁设置入口单步测试（会点击一次）"/>' +
+    '<button id="rotation" text="2. 自测旋转保护（仅测试页）"/>' +
+    '<button id="observe" text="3. 星铁只读截图/识别诊断（绝不点击）"/>' +
+    '<button id="game" text="4. 星铁设置入口单步测试（会点击一次）"/>' +
     '<button id="stop" text="停止（也可从 AutoJs6 停止脚本）"/>' +
     '<text id="status" text="待运行：请先在 AutoJs6 抽屉授权 Shizuku" textSize="16sp" marginTop="12"/>' +
     '<button id="target" text="WAIT" textSize="30sp" h="96" marginTop="24"/>' +
@@ -220,11 +221,11 @@ function geometry() {
     var metrics = new android.util.DisplayMetrics(); display.getRealMetrics(metrics);
     return {width: Number(metrics.widthPixels), height: Number(metrics.heightPixels), rotation: Number(display.getRotation())};
 }
-function start(mode) {
+function start(mode, rotationTest) {
     if (busy) return;
     if (selectedMode !== null) { status('请退出并重新运行脚本后再测，确保截图方向与权限重新初始化。'); return; }
     busy = true; cancelled = false; selectedMode = mode;
-    ui.selftest.setEnabled(false); ui.observe.setEnabled(false); ui.game.setEnabled(false);
+    ui.selftest.setEnabled(false); ui.rotation.setEnabled(false); ui.observe.setEnabled(false); ui.game.setEnabled(false);
     threads.start(function () {
         var report = {schema: 'android-automation.run.v1', adapter: 'autojs6-shizuku',
             runtimeRequired: '6.7.0', mode: mode, runId: String(java.util.UUID.randomUUID()),
@@ -240,9 +241,11 @@ function start(mode) {
             if (mode === 'fixture') {
                 ui.run(function () { ui.target.setText('TEST ' + nonce); ui.outcome.setText('READY'); });
             }
-            status(mode === 'fixture' ? '允许整个屏幕截图，然后保持本页，不要手动点测试按钮。' :
+            status(mode === 'fixture' && rotationTest ?
+                '允许整个屏幕截图。首帧后等待 8 秒，请旋转手机以测试安全停止。' :
+                (mode === 'fixture' ? '允许整个屏幕截图，然后保持本页，不要手动点测试按钮。' :
                 (mode === 'starrail_probe' ? '只读模式：截图授权后有 15 秒切到星铁，任何页面均可；不会点击。' :
-                '单击模式：截图授权后 15 秒内切到星铁手机菜单，保持“设置”入口可见。'));
+                '单击模式：截图授权后 15 秒内切到星铁手机菜单，保持“设置”入口可见。')));
             if (!images.requestScreenCapture(isGame)) throw new Error('CAPTURE_PERMISSION_DENIED');
             captureGranted = true;
             sleep(mode === 'fixture' ? 1500 : 15000);
@@ -268,7 +271,7 @@ function start(mode) {
             var spec = {packageName: pkg, target: mode === 'fixture' ? 'TEST ' + nonce : '设置',
                 expected: mode === 'fixture' ? ['PASS ' + nonce] : ['画面', '声音', '音量', '分辨率', '帧率'],
                 minExpected: mode === 'fixture' ? 1 : 2, confidence: 0.65, timeoutMs: 45000,
-                expectedExact: mode === 'fixture'};
+                expectedExact: mode === 'fixture', confirmationDelayMs: rotationTest ? 8000 : 400};
             var lastObservedFrame = null;
             var inputDeadline = Date.now() + spec.timeoutMs;
             var io = {
@@ -330,6 +333,8 @@ function start(mode) {
                         report.frames.push({width: frame.width, height: frame.height, rotation: g.rotation,
                             ocrCount: items.length, captureMs: captureMs, ocrMs: ocrMs,
                             durationMs: Date.now() - at});
+                        if (rotationTest && report.frames.length === 1)
+                            status('首帧已截取：请在 8 秒内旋转手机；检测到方向变化会阻止点击。');
                         persist(report);
                         return frame;
                     } finally { img.recycle(); }
@@ -361,5 +366,6 @@ function start(mode) {
     });
 }
 ui.selftest.on('click', function () { start('fixture'); });
+ui.rotation.on('click', function () { start('fixture', true); });
 ui.observe.on('click', function () { start('starrail_probe'); });
 ui.game.on('click', function () { start('starrail'); });
