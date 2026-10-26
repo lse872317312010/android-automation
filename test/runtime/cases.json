@@ -62,6 +62,18 @@
     "reason": "ROTATION_CHANGED"
   },
   {
+    "name": "fixture rotation probe blocks before input",
+    "options": {
+      "rotateAfterFirstCapture": true
+    },
+    "status": "blocked",
+    "press": "rotation",
+    "taps": 0,
+    "actionCount": 0,
+    "captureStops": 1,
+    "reason": "ROTATION_CHANGED"
+  },
+  {
     "name": "stale after persistence",
     "options": {
       "inputPersistenceDelay": 2600

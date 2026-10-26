@@ -42,11 +42,12 @@ public class FrameworkContractTest {
                 new String(bytes.toByteArray(), StandardCharsets.UTF_8));
         }
         JSONArray cases = new JSONArray(asset("cases.json"));
-        assertEquals(28, cases.length());
+        assertEquals(29, cases.length());
         for (int i = 0; i < cases.length(); i++) {
             JSONObject scenario = cases.getJSONObject(i);
             org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
             Bitmap bitmap = Bitmap.createBitmap(1080, 2400, Bitmap.Config.ARGB_8888);
+            Bitmap rotatedBitmap = Bitmap.createBitmap(2400, 1080, Bitmap.Config.ARGB_8888);
             try {
                 cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
                 cx.setOptimizationLevel(-1); // Android cannot use JVM bytecode class generation.
@@ -56,14 +57,18 @@ public class FrameworkContractTest {
                 cx.evaluateString(scope, asset("host-fixture.js"), "host-fixture.js", 1, null);
                 ScriptableObject.putProperty(scope, "__nativeRect", org.mozilla.javascript.Context.javaToJS(new Rect(100, 200, 400, 300), scope));
                 ScriptableObject.putProperty(scope, "__nativeBitmap", org.mozilla.javascript.Context.javaToJS(bitmap, scope));
+                ScriptableObject.putProperty(scope, "__nativeBitmapRotated",
+                    org.mozilla.javascript.Context.javaToJS(rotatedBitmap, scope));
                 // Preserve exception/permission injection while exercising Android
                 // public Rect fields and Bitmap methods through real Rhino interop.
                 cx.evaluateString(scope,
                     "var __oldOcr=ocr.mlkit.detect; ocr.mlkit.detect=function(img){" +
                     "var rows=__oldOcr(img); for(var i=0;i<rows.length;i++) rows[i].bounds=__nativeRect; return rows;};" +
                     "var __oldCapture=images.captureScreen; images.captureScreen=function(){" +
-                    "var image=__oldCapture(); image.getWidth=function(){return __nativeBitmap.getWidth();};" +
-                    "image.getHeight=function(){return __nativeBitmap.getHeight();}; return image;};",
+                    "var image=__oldCapture(); image.getWidth=function(){return __host.state.rotated?" +
+                    "__nativeBitmapRotated.getWidth():__nativeBitmap.getWidth();};" +
+                    "image.getHeight=function(){return __host.state.rotated?" +
+                    "__nativeBitmapRotated.getHeight():__nativeBitmap.getHeight();}; return image;};",
                     "android-value-bindings", 1, null);
                 cx.evaluateString(scope, asset("AndroidAutomation.js"), "AndroidAutomation.js", 1, null);
                 cx.evaluateString(scope, asset("case-runner.js"), "case-runner.js", 1, null);
@@ -74,6 +79,7 @@ public class FrameworkContractTest {
                 throw new AssertionError("Framework case failed: " + scenario.getString("name"), error);
             } finally {
                 bitmap.recycle();
+                rotatedBitmap.recycle();
                 org.mozilla.javascript.Context.exit();
             }
         }

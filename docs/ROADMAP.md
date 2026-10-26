@@ -1,6 +1,6 @@
 # Android game automation roadmap — quality gates first
 
-Updated 2026-10-22. Execution repo intentionally separate from Personal OS.
+Updated 2026-10-26. Execution repo intentionally separate from Personal OS.
 Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALITY-GATES.md) · [Research](GAME-AGENT-RESEARCH.md).
 
 ## Priority and status
@@ -120,37 +120,29 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 - [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
 - [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.
 
-## Current execution queue (2026-10-22, after framework harness)
+## Current execution queue (2026-10-26)
 
-1. **M0 stays first.** PR #8 is merged at `807f9b16550282beaa9e69815ac0f8eda6c0bb49`.
-   It adds three native framework tests and 28 shared inert Rhino scenarios, not
-   production screen capture or input acceptance.
-2. PR #9 is open at `3088d28f3382cbba44960c7caadcadb0e35f5990`.
-   Its Node/Rhino gates and API 30 instrumentation/report gate passed
-   ([native run](https://github.com/lse872317312010/android-automation/actions/runs/39806866955)).
-   It adds complete JUnit inventory checks and commit/script-bound CI receipts.
-   These are PR results; do not describe this work as merged.
-3. Next implementation: an unexported, launcher-free native fixture Activity;
-   actual UiAutomation screenshots and one instrumentation pointer gesture;
-   two visual postcondition frames and a closed-fixture zero-input check.
-   This is a separate native UI contract, not a test of AutoJs6 MediaProjection,
-   ML Kit OCR, Shizuku or the JavaScript production adapter. Require all five
-   native testcase identities once these two cases are added. Exact-head CI
-   evidence belongs in the implementation PR before this item is called verified.
-4. Remaining M0 exits: full production capture/permission/foreground/input tests,
-   enforced main branch rules and a disposable red-PR rejection check, plus a
-   deliberately exercised candidate publication path. The connector cannot
-   mutate branch administration; no enforcement is inferred from green CI.
-5. M1 requires a physical Redmi and operator observations using
-   `evidence/README.md`. No physical device is connected to this session.
-   Keep M1, live-game execution, Skill activation and signed production
-   promotion pending. Continue hardware-independent M0 work while these
-   external dependencies remain unavailable.
-
-## Delivery requirement (2026-10-24)
-
-At the user's request, every completed development milestone must include a
-downloadable APK, commit identity, SHA256SUMS and validation scope. The current
-milestone adds a launcher, manual fixture and bundled-script export. Successful main-branch CI publishes a debug APK prerelease in GitHub Releases, with its SHA256SUMS and validation receipt. Native automation host,
-long-term release signing and Redmi/game acceptance remain pending; no APK
-build alone completes M0/M1. PR #9/#10 are still open at this inspection.
+1. The latest main commit is `570d443d94e26ff3a1ff2048867fb0ae71327d29`.
+   Node 20/22, pinned AutoJs6 Rhino and API 30 emulator gates passed; the
+   commit-bound debug milestone APK and script are published as a GitHub
+   prerelease. This validates the harness and fixture scope listed in its
+   receipt, not a production Android capture adapter or a Redmi/game run.
+2. M0 remains open for branch-rule enforcement and a disposable red-PR merge
+   rejection check. These require repository administration access unavailable
+   to the current connector. Production MediaProjection, permission lifecycle,
+   OCR and Shizuku input still lack a complete native instrumentation path.
+3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
+   in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
+   Fixture success alone does not establish the negative safety paths or a game
+   task. Keep live-game input, Skill activation and signed production promotion
+   disabled until their own evidence is reviewed.
+4. This continuation makes the rotation scenario reproducible: leave the app
+   orientation unlocked, expose an eight-second fixture-only rotation window,
+   classify changed frame geometry as `ROTATION_CHANGED`, and prove zero input
+   in Node and pinned Rhino. The API 30 instrumentation and Node/Rhino gates
+   must pass on the exact PR head before merge.
+5. At the user's request, each completed development milestone includes a
+   downloadable APK, commit identity, SHA256SUMS and validation scope. Successful
+   main-branch CI publishes the debug APK prerelease in GitHub Releases. Debug
+   signing is temporary; later builds may require reinstalling. APK delivery
+   does not complete M0/M1 or imply Redmi/game acceptance.

@@ -83,7 +83,7 @@ test('seeded negative cases never dispatch an input (512 variations)', () => {
                 reason = 'CAPTURE_GEOMETRY_MISMATCH'; break;
             case 5:
                 frames = [valid, frame(TARGET, b, {rotation: 1})];
-                reason = 'UNSTABLE_TARGET'; break;
+                reason = 'ROTATION_CHANGED'; break;
             case 6:
                 frames = [valid, frame(TARGET, b, {items: [valid.items[0], valid.items[0]]})];
                 reason = 'AMBIGUOUS_TARGET'; break;

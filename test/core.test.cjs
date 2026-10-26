@@ -33,11 +33,42 @@ test('never taps an ambiguous target',()=>{
     const f=before();f.items.push(f.items[0]);const t=setup([f]);
     assert.throws(()=>core.run(t.io,t.spec),/AMBIGUOUS_TARGET/);assert.equal(t.taps(),0);
 });
+test('frame geometry changes before input are classified as rotation',()=>{
+    const changedFrames=[
+        frame('TEST 123456',{width:1200,displayWidth:1200}),
+        frame('TEST 123456',{height:2000,displayHeight:2000}),
+        frame('TEST 123456',{rotation:1})
+    ];
+    for(const changed of changedFrames){
+        const t=setup([before(),changed]);
+        assert.throws(()=>core.run(t.io,t.spec),/ROTATION_CHANGED/);
+        assert.equal(t.taps(),0);
+    }
+});
+test('target coordinate drift within stable geometry remains unstable',()=>{
+    const movedX=before();
+    movedX.items[0].bounds={left:120,top:200,right:420,bottom:300};
+    const movedY=before();
+    movedY.items[0].bounds={left:100,top:220,right:400,bottom:320};
+    for(const moved of [movedX,movedY]){
+        const t=setup([before(),moved]);
+        assert.throws(()=>core.run(t.io,t.spec),/UNSTABLE_TARGET/);
+        assert.equal(t.taps(),0);
+    }
+});
+test('rotation test wait creates a zero-input geometry check window',()=>{
+    const t=setup([before(),frame('TEST 123456',{width:2400,height:1080,
+        displayWidth:2400,displayHeight:1080,rotation:1})]);
+    t.spec.confirmationDelayMs=8000;
+    assert.throws(()=>core.run(t.io,t.spec),/ROTATION_CHANGED/);
+    assert.equal(t.io.now(),8000);
+    assert.equal(t.taps(),0);
+});
 for (const [name,frames,reason] of [
     ['low confidence',[frame('TEST 123456',{items:[{text:'TEST 123456',confidence:0.2,bounds:{}}]})],'TARGET_NOT_FOUND'],
     ['already completed',[after()],'ALREADY_AT_RESULT'],
     ['cropped capture',[frame('TEST 123456',{displayWidth:1200})],'CAPTURE_GEOMETRY_MISMATCH'],
-    ['rotation before action',[before(),frame('TEST 123456',{rotation:1})],'UNSTABLE_TARGET'],
+    ['rotation before action',[before(),frame('TEST 123456',{rotation:1})],'ROTATION_CHANGED'],
     ['no result transition',[before()],'POSTCONDITION_NOT_MET'],
     ['different run nonce',[before(),before(),frame('PASS 999999')],'POSTCONDITION_NOT_MET'],
     ['rotation after action',[before(),before(),frame('PASS 123456',{rotation:1})],'ROTATION_CHANGED'],
