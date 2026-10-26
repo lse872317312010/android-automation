@@ -11,7 +11,7 @@ const mutations=[
     {id:'owned-image-leak',file:'src/android.js',from:'finally { img.recycle(); }',to:'finally { /* deliberately leaked */ }'},
     {id:'recycle-cached-image',file:'src/android.js',from:'images.copy(images.captureScreen())',to:'images.captureScreen()'},
     {id:'no-version-input-gate',file:'src/android.js',from:"mode === 'starrail' && clientStatus !== 'unchanged'",to:'false'},
-    {id:'readonly-can-execute',file:'src/android.js',from:"mode === 'starrail_probe' ? VisualLoop.probe(io, spec) : VisualLoop.run(io, spec)",to:'VisualLoop.run(io, spec)'},
+    {id:'readonly-can-execute',file:'src/android.js',from:"VisualLoop.probe(io, spec) : VisualLoop.run(io, spec)",to:'VisualLoop.run(io, spec) : VisualLoop.run(io, spec)'},
     {id:'one-postcondition-frame',file:'src/core.js',from:'if (consecutive >= 2)',to:'if (consecutive >= 1)'},
     {id:'duplicate-input',file:'src/core.js',from:'io.tap(q.x, q.y);',to:'io.tap(q.x, q.y); io.tap(q.x, q.y);'},
     {id:'skip-final-stage-freshness',file:'src/core.js',from:'fresh(b);\n        io.tap',to:'/* stale frame accepted */\n        io.tap'},
