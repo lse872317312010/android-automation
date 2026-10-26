@@ -9,7 +9,7 @@ Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALIT
 | --- | --- | --- | --- | --- |
 | **M0: CI/CD & test harness** | **P0: do first** | Node LTS test matrix, deterministic mocked device and seeded fault injection; coverage/syntax/generator consistency gates; release candidate checksum; test/evidence convention | Green mandatory GitHub Actions on exact merge SHA; reproducible artifact and checksum; no unknown unsafe tap in negative scenarios | **In progress** |
 | **M1: native Redmi smoke acceptance** | P0 after M0 | AutoJs6 6.7.0 + Shizuku permission, capture, OCR, one user-approved action, verification, safe stop, recover interrupted | Redacted report from physical Redmi and user-observed test, separate from offline CI | Not done |
-| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Design only |
+| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft-only schema/parser implemented; no runtime loader or executor |
 | **M3: Star Rail vertical slice** | P1 | One low-risk daily-path Skill with game package+locale checks, ROI/templates/OCR, deterministic postconditions; no blind clicks | Success/failure evidence on Redmi and fixture regression across version changes | Not done |
 | **M4: AI repair and memory** | P2 | failure classifier, experience retrieval (AgentRR pattern), AI repair candidate (Mobile-Agent-E pattern), Maa-native graph proposal (MaaFwPhoneAI pattern) | Changes in 3 synthetic UI families produce non-privileged candidates, pass old/new regression + explicit review; no direct AI tap | Not done |
 | **M5: upstream & lifecycle** | P2 | Monitor StarRailCopilot / March7thAssistant task changes, extract candidate asset diffs, CI-based review, signed staged resources and rollback | Upstream change → review PR → test → signed candidate → device acceptance | Not done |
@@ -33,7 +33,7 @@ Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 u
 
 Checklist intentionally records a plan; completion of a doc file alone does not mark code/tests complete. Update statuses based on merged CI and physical evidence.
 
-## Planned interfaces (not in source yet)
+## Planned runtime interfaces (the draft validator does not implement runtime loading)
 
 ```ts
 type SkillIdentity = {
@@ -71,7 +71,7 @@ type ExecutionEvidence = {
 };
 ```
 
-Version registry, repair API and Personal OS integration are separate deliverables; none exist in the v0.3 script.
+The draft schema and parser only validate data and reject activation. A version registry, runtime loader/executor, repair API and Personal OS integration remain separate deliverables; none exist in the v0.3 script.
 
 ### Current continuation (2026-10-22)
 
@@ -122,24 +122,27 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 ## Current execution queue (2026-10-26)
 
-1. Main `62c407fd70d538e226663cb562bbf391dd595e26` passed Node 20/22, pinned
-   AutoJs6 Rhino and API 30 emulator gates. Its commit-bound debug milestone
-   APK and script are published in GitHub Releases. This validates harness and
-   fixture scope only; it is not a production capture adapter or Redmi/game run.
-2. M0 remains open for branch-rule enforcement and a disposable red-PR merge
-   rejection check. These require repository administration access unavailable
-   to the current connector. Production MediaProjection, permission lifecycle,
-   OCR and Shizuku input still lack a complete native instrumentation path.
+1. The preceding main milestone `c441d4bb5864a3ac2feb3e2ed25ffb45559ebd3b`
+   passed Node 20/22, pinned AutoJs6 Rhino and API 30 framework gates. Its
+   debug test APK, script, framework receipt and checksums are in the matching
+   GitHub Release. This is harness/fixture evidence, not a production capture
+   adapter or Redmi/game acceptance.
+2. M0 remains open for main-branch ruleset enforcement and a disposable red-PR
+   merge-rejection check. The linked GitHub account has repository admin
+   permission, but the active connector exposes no branch-rule write action.
+   Production MediaProjection, permission lifecycle, OCR and Shizuku input do
+   not yet have complete native instrumentation.
 3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
    in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
    Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
-4. Current safety continuation makes the rotation probe observation-only. The
-   rotation test must always send zero input: report `ROTATION_CHANGED` when
-   display geometry changes and `ROTATION_NOT_DETECTED` when it does not.
-   Node, pinned Rhino and API 30 gates must validate both outcomes.
-5. At the user's request, each completed development milestone includes a
-   downloadable APK, commit identity, SHA256SUMS and validation scope. Successful
-   main-branch CI publishes the debug APK prerelease in GitHub Releases. Debug
-   signing is temporary; later builds may require reinstalling. APK delivery
-   does not complete M0/M1 or imply Redmi/game acceptance.
+4. The first M2 contract milestone adds a strict draft-only JSON Schema and
+   bundled pure-JavaScript validator and offline Node CLI. It rejects activation, nonzero input/retry budgets,
+   executable workflow paths, unknown capabilities, unsupported signatures
+   and malformed compatibility metadata. It does not load or execute Skills.
+   CI tests it and the existing main workflow still publishes the test-only APK
+   after Node, Rhino and API 30 gates pass.
+5. Each accepted development milestone includes a commit-bound APK, script,
+   SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
+   debug signed; later builds may require reinstalling. It does not complete
+   M0/M1 or imply Redmi/game acceptance.

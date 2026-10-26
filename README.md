@@ -1,21 +1,21 @@
 # Android Automation · 本地视觉执行器 0.3（星铁 APK 版本漂移保护）
 
-截至 2026-10-22：**已有 Node/Rhino 验证和部分 Android 模拟器框架测试；AutoJs6 截图/OCR/Shizuku 完整链路及 Redmi 真机仍未验收。**
-交付形态是官方 AutoJs6 APK + 单个脚本，不是新编译的 Personal OS 独立 APK。
+截至 2026-10-26：Node 20/22、AutoJs6 Rhino 和 API 30 框架合同均有 CI；AutoJs6 截图/OCR/Shizuku 完整链路及 Redmi 真机仍未验收。
+手机端运行形态仍是官方 AutoJs6 APK + 单个脚本。GitHub Release APK 是测试夹具，不是 AutoJs6 或正式自动化宿主。
 
 ## 工程路线与质量门禁（先测试，后开发）
 
-项目优先级已调整为：**M0 自动 CI/CD + 可复现设备模拟器与故障注入测试 → M1 Redmi 真机验收 → M2 Skill/插件兼容性与回滚 → M3 AI 修复提案/经验固化 → M4 上游版本同步**。
+项目优先级按 [路线图](docs/ROADMAP.md) 执行：**M0 CI/CD 与合同测试 → M1 Redmi 真机验收 → M2 Skill Runtime/隔离 → M3 星铁垂直切片 → M4 AI 修复提案 → M5 上游同步 → M6 多游戏调度**。
 
 - [ADR-0001：确定性 Game Agent + AI Skill Repair](docs/ADR-0001-reliable-game-agent.md) — 架构原则、更新自修复、零 Token 优先策略与安全边界。
 - [游戏 Agent 研究矩阵](docs/GAME-AGENT-RESEARCH.md) — MaaFwPhoneAI、MobiAgent/AgentRR、Mobile-Agent-E、MaaFramework、MaaEnd、BetterGI、星铁上游等。
 - [CI/CD、测试环境与质量门禁](docs/QUALITY-GATES.md) — Node LTS、随机故障注入、覆盖率、生成构建一致性、模拟器与真机的分级验收。
 - [路线图与具体完成条件](docs/ROADMAP.md) — M0–M6、各阶段退出条件、Skill/版本管理接口草案。
-- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 为后续兼容性管理和有审核的发布提供数据契约示范，当前仅为设计样例。
+- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，同一校验器也可用离线 [CLI](tool/validate-skill-manifest.cjs)，不提供加载或执行接口。
 
 **“0 bug”是质量目标，不能作为未经证明的绝对保证。** 实际执行标准是零已知 P0/P1 缺陷、全量强制测试通过、失败场景零误触控和零错误完成宣称。CI 仅验证硬件接口以上的可模拟策略；真机权限、MediaProjection、OCR 和 Shizuku 的行为必须独立验收。
 
-CI 在 PR/提交上运行 Node 20/22 单元与故障注入测试、代码语法检查、覆盖率阈值、重新打包与产物一致性检查。候选标签 `vX.Y.Z-rc.N` 可以触发脚本与 SHA256 的自动预发布，**不是可供宣称真机通过的 APK**。
+CI 在 PR 和主分支运行 Node 20/22、AutoJs6 Rhino、API 30 框架测试、覆盖率和生成文件一致性门禁。主分支通过后会在 GitHub Releases 发布 commit-bound 调试 APK、脚本和 SHA256SUMS；它是测试宿主，不是稳定签名包，也不代表真机或游戏验收。
 
 
 ## 手机上测试（无需 PC）
@@ -30,8 +30,7 @@ CI 在 PR/提交上运行 Node 20/22 单元与故障注入测试、代码语法�
 要实测旋转保护，重新运行脚本后选择“2. 自测旋转保护（仅测试页）”。首帧出现后 8 秒内旋转手机；检测到旋转时为 `blocked / ROTATION_CHANGED`，没检测到时为 `blocked / ROTATION_NOT_DETECTED`。两种结果的 `actionCount` 都是 0，这项测试始终不触控，只在夹具页运行。若系统未开启自动旋转，请先开启。
 
 系统授权无法由应用代替用户确认。小米如终止后台执行，再按系统提示允许 AutoJs6 后台运行；无需先批量修改系统设置。
-APK SHA-256 已与 GitHub Release 的 digest 实际比对一致：
-`a4fa5c941aecc4dbb770316e35ac98ae5b0efef5041ac0533dfa826b94595525`。
+每次测试版 APK 的 SHA-256 都随对应 GitHub Release 的 `SHA256SUMS` 发布；请从该版本页面核对，不要复用旧版摘要。
 本项目不修改或重签官方 APK；上游源码、许可和发布说明均在 [AutoJs6](https://github.com/SuperMonster003/AutoJs6/tree/v6.7.0)。
 
 ## 星铁只读诊断（先做，不触控）
@@ -118,12 +117,13 @@ SRC 的 Python 业务不能直接当 Maa Pipeline 导入。本模块只验证执
 
 ```sh
 node --test test/*.test.cjs
+node tool/validate-skill-manifest.cjs examples/starrail-skill-manifest.example.json
 node --experimental-test-coverage --test --test-coverage-include=src/core.js --test-coverage-lines=100 --test-coverage-branches=90 --test-coverage-functions=100 test/*.test.cjs
 node build.mjs
 node --check dist/AndroidAutomation.js
 git diff --exit-code -- dist/AndroidAutomation.js
 ```
 
-离线测试验证控制策略（含只读探测不发送动作、前台变化、旋转、超时、取消），不验证 AutoJs6 Rhino/Android API、权限、实际 OCR 或游戏版本。
+离线测试验证控制策略和 draft manifest 合同（校验器不会返回可执行 Skill），不验证 AutoJs6 Rhino/Android API、权限、实际 OCR 或游戏版本。
 真机需至少验证：自测成功、拒绝截图、撤销 Shizuku、切换前台、旋转屏幕、停止脚本、进程中断后重启，以及星铁单步实际后置条件。
 当前没有任何一项被宣称已完成。游戏内资源热更新检测、自动同步上游、插件版本清单、完整游戏自动化、Personal OS 自动回传、稳定 APK 自有签名升级是后续工作。

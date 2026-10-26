@@ -287,5 +287,10 @@
     "press": "game",
     "status": "blocked",
     "reason": "GAME_VERSION_BASELINE_REQUIRED"
+  },
+  {
+    "name": "draft skill contract parser remains non-executable",
+    "kind": "skill-contract",
+    "options": {}
   }
 ]

@@ -25,25 +25,26 @@ Absolute zero defects in arbitrary code or game/OEM versions is **not demonstrab
 | T0 | Node 20 / 22 hosted runners | Parse/syntax, invariant/property tests, error semantics, deterministic replay | AutoJs6 Rhino syntax quirks and Android API behavior | Required PR+main |
 | T1 | Offline simulated adapter + synthetic OCR frame sequences | One-action maximum, no invalid tap, cancellation/timeout, stale frame, expected state, package/rotation | Real visual accuracy, Shizuku availability | Required PR+main |
 | T2 | Offline screenshot corpus, annotated and sanitized | OCR/CV scene classification, template drift, false positives and negatives | Correct physical touch | Required once corpus exists (not claimed implemented) |
-| T3 | Android emulator / instrumented test app | Capture/foreground/input + UI semantics on emulator | Xiaomi OS policies, physical thermal behavior, Star Rail version | Planned integration job |
+| T3 | Android emulator / instrumented test app | API 30 framework contracts, inert Rhino host, native fixture screenshot/input semantics | Production AutoJs6 capture/OCR/Shizuku path, Xiaomi OS policies, physical thermal behavior, Star Rail version | Partial hosted framework gate |
 | T4 | Physical Redmi with AutoJs6 + Shizuku | MediaProjection, permissions, OEM scheduling, real gesture, scroll, focus and UI verifier | Reproducibility on all devices | Explicit device acceptance required for "Redmi verified" label |
 | T5 | Live Star Rail bounded scenarios | Actual task entry/exit, benign input, semantically verified outcome, compatibility | Every future hot update/game server event | Required before any claim of game daily support |
 | T6 | AI candidate repair evaluation | Safe suggestion format, replay, rollback/approval controls | Safe autonomous production deployment | Planned before AI feature goes live |
 
-The merged code covers T0/T1 and a **partial T3 framework harness** (PR #8: real Rect/Bitmap/rename contracts on API 30, with capture/OCR/input substituted). Full production-adapter T3 and T2/T4/T5/T6 remain unverified. See [current execution queue](ROADMAP.md#current-execution-queue-2026-10-22-after-framework-harness) and [harness scope](../android-harness/README.md). GitHub Actions is not a physical-device test.
+The merged code covers T0/T1 and a **partial T3 harness**: 30 shared script scenarios run through pinned AutoJs6 Rhino on API 30 with inert capture/OCR/Shizuku, plus real Android Bitmap/file contracts and a separate native fixture screen test. The native fixture screenshot and injected gesture do not exercise the production JavaScript adapter. Production-adapter T3, T2/T4/T5/T6 remain unverified. See the [current execution queue](ROADMAP.md#current-execution-queue-2026-10-26) and [harness scope](../android-harness/README.md). GitHub Actions is not a physical-device test.
 
-## CI policy to implement immediately
+## Implemented CI policy and remaining release controls
 
 - GitHub Actions on every push/PR/dispatch; **including docs/quality changes**, with `permissions: contents: read`.
 - Node LTS matrix (20, 22) executes all `test/*.test.cjs` without internet/dependency installations.
-- Parse-check `src/core.js`, `src/android.js`, `build.mjs` and `dist/AndroidAutomation.js`.
+- Parse-check `src/core.js`, `src/android.js`, `build.mjs`, the draft manifest validator and `dist/AndroidAutomation.js`.
 - Run safety property/fault-injection tests against a mocked device adapter.
 - Rebuild `dist/AndroidAutomation.js` from `src/...`; fail if the generated bundle differs from committed source.
 - Node22 produces native V8 coverage and enforces **initial** line/branch/function thresholds, with subsequent raises after measuring the baseline.
 - Upload the exact bundled JS artifact for review. This is **a script, not a signed APK**.
 - PR merge and tagged candidate releases must not bypass test/coverage/generation gates.
-- Automatic *candidate* release on `vX.Y.Z-rc.N` tag is permitted once tests are green. A candidate is **not hardware approved**, even when released with checksum.
+- A successful main-branch API 30 workflow publishes a commit-bound, debug-signed test APK, bundled script, framework receipt and checksums as a GitHub prerelease. This is not a stable product build or hardware approval.
 - Production-device support requires a separate signed manual acceptance record; no automated stable release until that workflow exists.
+- The first M2 contract slice ships a strict draft-only JSON Schema and a pure JavaScript validator in the AutoJs6 bundle. Its CLI and Node/Rhino/API 30 tests reject activation, nonzero budgets, executable workflows, unknown capabilities and unsupported signatures; there is still no Skill loader or executor.
 
 ## Required repository branch rule (administrative setting; not yet confirmed enabled)
 
@@ -54,11 +55,11 @@ The workflows actively **fail on bad code**, but GitHub Actions alone does **not
 - Block force-push and deletion of `main`; avoid bypassing checks for administrators.
 - Record a successful branch-rule verification with a deliberately failing test on a disposable PR, then discard that PR.
 
-The connector available for this change does not expose a branch-rule mutation operation, so **this administrative enforcement is pending**; until verified, call these *automated checks*, not *enforced branch protection*. Tag candidate CD itself repeats all tests rather than trusting a previously run check.
+The connected GitHub account has repository admin permission, but the active connector exposes rule reads and no branch-rule mutation operation. **Administrative enforcement remains pending** until configured through a write-capable GitHub interface and verified with a disposable failing PR. Until then, call these *automated checks*, not *enforced branch protection*.
 
 ## Deterministic simulation fixtures
 
-Create `test/invariants.test.cjs` (seeded reproducible property checks) and keep existing `test/core.test.cjs` as example/edge-case tests.
+`test/invariants.test.cjs` provides seeded reproducible property checks; `test/core.test.cjs` remains the example/edge-case suite.
 
 Required matrix:
 1. Valid one-click, two-frame verified postcondition.
@@ -106,12 +107,14 @@ Record without account-identifying data:
 ## Release process
 
 ```text
-change → PR → T0/T1 gates green → merge → release-candidate tag
-  → automatic candidate artifact + SHA256 (no apk)
+change → PR → T0/T1 + applicable Rhino/API 30 gates green → merge
+  → commit-bound debug fixture APK + script + SHA256SUMS in GitHub Releases
   → T2/T3 + T4/T5 manual evidence as required
-  → explicit promote to device-verified Skill version
+  → explicit promote to a signed device-verified Skill version
   → monitored roll-out, rollback on failure
 ```
+
+The APK is a test harness and requires the official AutoJs6 runtime to run the bundled script. It is not a production automation host.
 
 No release/CI status can prove "0 bug" in untested OS, game or network conditions. Implementing T0/T1 first is deliberate: it makes every subsequent feature testable before privileged-device interaction.
 

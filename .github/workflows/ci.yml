@@ -31,13 +31,16 @@ jobs:
       - name: Verify source/builder JavaScript syntax
         run: |
           node --check src/core.js
+          node --check src/skill-contract.js
           node --check src/android.js
           node --check build.mjs
           node --check test/core.test.cjs
           node --check test/invariants.test.cjs
           node --check test/host.test.cjs
           node --check test/acceptance.test.cjs
+          node --check test/skill-manifest.test.cjs
           node --check tool/validate-acceptance.cjs
+          node --check tool/validate-skill-manifest.cjs
           node --check tool/test-rhino.mjs
           node --check tool/mutation-check.mjs
           node --check test/runtime.test.cjs
@@ -68,6 +71,7 @@ jobs:
       - name: Assert draft example cannot be executed
         run: |
           node -e "const m=require('./examples/starrail-skill-manifest.example.json'); if(m.skill.executionEnabled!==false || m.skill.status!=='draft' || m.execution.inputBudget.maxActions!==0) process.exit(1)"
+          node tool/validate-skill-manifest.cjs examples/starrail-skill-manifest.example.json
       - name: Rebuild distributable from reviewed source
         run: node build.mjs
       - name: Verify generated script is syntactically valid
