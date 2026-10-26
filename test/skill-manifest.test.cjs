@@ -82,3 +82,74 @@ test('draft metadata is bounded and unsupported engine aliases fail', () => {
     assert.ok(errors.includes('ENGINE_ID'));
     assert.ok(errors.includes('UI_PROFILE_REQUIRED'));
 });
+
+function compatibleManifest() {
+    const manifest = copy(example);
+    manifest.compatibility.apkVersionCode = {min:'100', max:'200'};
+    manifest.compatibility.uiSignature = {profile:'fixture-menu-v1',requiredAnchors:['menu.settings']};
+    manifest.compatibility.engine.minVersion = '6.7.0';
+    return manifest;
+}
+function compatibilityContext() {
+    return {
+        packageName:'com.miHoYo.hkrpg',
+        locale:'zh-CN',
+        apkVersionCode:'150',
+        engine:{id:'maafw',version:'6.10.0'},
+        capabilities:['capture.fullscreen','recognize.ocr','act.tap','verify.semantic'],
+        ui:{profile:'fixture-menu-v1',anchors:['menu.settings']}
+    };
+}
+
+test('matching metadata remains fixture-review only and can never activate', () => {
+    const result = SkillContract.evaluateCompatibility(compatibleManifest(), compatibilityContext());
+    assert.equal(result.status, 'compatible_for_fixture_review');
+    assert.equal(result.activationAllowed, false);
+    assert.deepEqual(result.reasons,
+        ['DEVICE_VALIDATION_REQUIRED','DRAFT_ONLY','EXECUTOR_NOT_IMPLEMENTED','SIGNATURE_UNSUPPORTED']);
+    assert.deepEqual(Object.keys(result).sort(), ['activationAllowed','reasons','status']);
+});
+
+test('unknown or mismatched compatibility metadata fails closed', () => {
+    const manifest = compatibleManifest();
+    const mutations = [
+        [c => {c.packageName='com.other.game';}, 'PACKAGE_MISMATCH'],
+        [c => {c.locale='en-US';}, 'LOCALE_MISMATCH'],
+        [c => {c.apkVersionCode=null;}, 'APK_VERSION_UNKNOWN'],
+        [c => {c.apkVersionCode='201';}, 'APK_VERSION_OUT_OF_RANGE'],
+        [c => {c.engine.version='6.6.9';}, 'ENGINE_VERSION_TOO_OLD'],
+        [c => {c.engine.id='autojs6-shizuku';}, 'ENGINE_MISMATCH'],
+        [c => {c.ui.profile='other-profile';}, 'UI_PROFILE_MISMATCH'],
+        [c => {c.ui.anchors=[];}, 'UI_ANCHORS_MISSING'],
+        [c => {c.capabilities.pop();}, 'CAPABILITY_MISSING']
+    ];
+    for (const [mutate, code] of mutations) {
+        const context = compatibilityContext();
+        mutate(context);
+        const result = SkillContract.evaluateCompatibility(manifest, context);
+        assert.equal(result.status, 'blocked', code);
+        assert.equal(result.activationAllowed, false, code);
+        assert.ok(result.reasons.includes(code), code);
+    }
+});
+
+test('unpinned draft, malformed context and invalid manifest never become compatible', () => {
+    const unpinned = SkillContract.evaluateCompatibility(example, compatibilityContext());
+    assert.equal(unpinned.status, 'blocked');
+    assert.ok(unpinned.reasons.includes('APK_VERSION_RANGE_UNPINNED'));
+    assert.ok(unpinned.reasons.includes('ENGINE_VERSION_UNPINNED'));
+    assert.ok(unpinned.reasons.includes('UI_PROFILE_UNPINNED'));
+
+    const context = compatibilityContext();
+    context.privateValue = 'SECRET';
+    const malformed = SkillContract.evaluateCompatibility(compatibleManifest(), context);
+    assert.deepEqual(malformed, {status:'blocked',activationAllowed:false,reasons:['CONTEXT_INVALID']});
+    assert.equal(JSON.stringify(malformed).includes('SECRET'), false);
+
+    const active = compatibleManifest();
+    active.skill.executionEnabled = true;
+    const rejected = SkillContract.evaluateCompatibility(active, compatibilityContext());
+    assert.equal(rejected.status, 'rejected');
+    assert.equal(rejected.activationAllowed, false);
+    assert.ok(rejected.reasons.includes('EXECUTION_DISABLED'));
+});

@@ -31,6 +31,22 @@ function runRuntimeCase(spec) {
         var unknown = SkillContract.parseDraft(JSON.stringify(manifest));
         if (unknown.valid || unknown.errors.indexOf('CAPABILITIES') < 0)
             throw new Error(spec.name + ': unknown capability was accepted');
+        manifest.compatibility.requiredCapabilities.pop();
+        manifest.compatibility.apkVersionCode = {min:'100',max:'200'};
+        manifest.compatibility.uiSignature = {profile:'fixture-v1',requiredAnchors:['menu']};
+        manifest.compatibility.engine.minVersion = '6.7.0';
+        var context = {packageName:'com.example.fixture',locale:'en-US',apkVersionCode:'150',
+            engine:{id:'maafw',version:'6.10.0'},
+            capabilities:['capture.fullscreen','recognize.ocr','act.tap','verify.semantic'],
+            ui:{profile:'fixture-v1',anchors:['menu']}};
+        var assessment = SkillContract.evaluateCompatibility(manifest, context);
+        if (assessment.status !== 'compatible_for_fixture_review' || assessment.activationAllowed !== false)
+            throw new Error(spec.name + ': metadata match activated or failed');
+        context.engine.version = '6.6.9';
+        assessment = SkillContract.evaluateCompatibility(manifest, context);
+        if (assessment.status !== 'blocked' || assessment.activationAllowed !== false ||
+            assessment.reasons.indexOf('ENGINE_VERSION_TOO_OLD') < 0)
+            throw new Error(spec.name + ': engine drift did not block');
         return {name:spec.name,status:'pass',taps:0};
     }
     var h=__host;
