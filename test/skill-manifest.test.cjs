@@ -182,3 +182,50 @@ test('compatibility context diagnostics are field-specific, stable, and never ec
         assert.deepEqual(result.reasons, diagnostics, code);
     }
 });
+
+
+test('draft registry accepts distinct skills while remaining non-activating', () => {
+    const second = copy(example);
+    second.skill.id = 'starrail.daily_claim';
+    const result = SkillContract.validateDraftRegistry([example, second]);
+    assert.deepEqual(result, {
+        status:'valid_draft_registry',activationAllowed:false,count:2,issues:[]
+    });
+    const historical = copy(example);
+    historical.skill.version = '0.0.1-draft';
+    assert.equal(SkillContract.validateDraftRegistry([example, historical]).status,
+        'valid_draft_registry');
+});
+
+test('draft registry rejects duplicate versions and invalid entries without echoing data', () => {
+    const duplicate = SkillContract.validateDraftRegistry([example, copy(example)]);
+    assert.equal(duplicate.status, 'rejected');
+    assert.equal(duplicate.activationAllowed, false);
+    assert.deepEqual(duplicate.issues, [{index:1,codes:['DUPLICATE_SKILL_VERSION']}]);
+
+    const invalid = copy(example);
+    invalid.skill.executionEnabled = true;
+    invalid.skill.description = 'PRIVATE_REGISTRY_VALUE';
+    const rejected = SkillContract.validateDraftRegistry([example, invalid]);
+    assert.equal(rejected.status, 'rejected');
+    assert.equal(rejected.activationAllowed, false);
+    assert.equal(rejected.issues[0].index, 1);
+    assert.ok(rejected.issues[0].codes.includes('EXECUTION_DISABLED'));
+    assert.equal(JSON.stringify(rejected).includes('PRIVATE_REGISTRY_VALUE'), false);
+});
+
+test('draft registry rejects missing, empty, and oversized catalogs', () => {
+    assert.deepEqual(SkillContract.validateDraftRegistry(null), {
+        status:'rejected',activationAllowed:false,count:0,
+        issues:[{index:null,codes:['REGISTRY_ARRAY_REQUIRED']}]
+    });
+    assert.deepEqual(SkillContract.validateDraftRegistry([]), {
+        status:'rejected',activationAllowed:false,count:0,
+        issues:[{index:null,codes:['REGISTRY_EMPTY']}]
+    });
+    const oversized = Array.from({length:33}, () => copy(example));
+    const result = SkillContract.validateDraftRegistry(oversized);
+    assert.equal(result.status, 'rejected');
+    assert.equal(result.count, 33);
+    assert.deepEqual(result.issues, [{index:null,codes:['REGISTRY_TOO_LARGE']}]);
+});
