@@ -48,7 +48,7 @@ var VisualLoop = (function () {
             // Only aggregate counts are returned. Never export recognized text or screen content.
             snapshots.push({ocrCount: f.items.length, targetCount: matches});
             last = f;
-            if (i === 0) io.sleep(700);
+            if (i === 0) io.sleep(spec.confirmationDelayMs || 700);
         }
         return {status: 'observed', summary: {
             observedFrames: snapshots.length,

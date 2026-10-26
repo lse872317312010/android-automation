@@ -127,6 +127,14 @@ test('read-only probe rejects a foreground switch between screenshots',()=>{
     assert.throws(()=>core.probe(t.io,t.spec),/FOREGROUND_CHANGED/);
     assert.equal(t.taps(),0);
 });
+test('read-only rotation probe uses the requested delay and never taps',()=>{
+    const t=setup([before(),frame('TEST 123456',{rotation:1})]);
+    t.spec.confirmationDelayMs=8000;
+    t.io.tap=()=>{throw new Error('ROTATION_PROBE_TAPPED');};
+    assert.throws(()=>core.probe(t.io,t.spec),/ROTATION_CHANGED/);
+    assert.equal(t.io.now(),8000);
+    assert.equal(t.taps(),0);
+});
 test('read-only probe rejects rotation and crop',()=>{
     const t=setup([before(),frame('TEST 123456',{rotation:1})]);
     assert.throws(()=>core.probe(t.io,t.spec),/ROTATION_CHANGED/);

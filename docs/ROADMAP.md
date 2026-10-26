@@ -122,25 +122,22 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 ## Current execution queue (2026-10-26)
 
-1. The latest main commit is `570d443d94e26ff3a1ff2048867fb0ae71327d29`.
-   Node 20/22, pinned AutoJs6 Rhino and API 30 emulator gates passed; the
-   commit-bound debug milestone APK and script are published as a GitHub
-   prerelease. This validates the harness and fixture scope listed in its
-   receipt, not a production Android capture adapter or a Redmi/game run.
+1. Main `62c407fd70d538e226663cb562bbf391dd595e26` passed Node 20/22, pinned
+   AutoJs6 Rhino and API 30 emulator gates. Its commit-bound debug milestone
+   APK and script are published in GitHub Releases. This validates harness and
+   fixture scope only; it is not a production capture adapter or Redmi/game run.
 2. M0 remains open for branch-rule enforcement and a disposable red-PR merge
    rejection check. These require repository administration access unavailable
    to the current connector. Production MediaProjection, permission lifecycle,
    OCR and Shizuku input still lack a complete native instrumentation path.
 3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
    in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
-   Fixture success alone does not establish the negative safety paths or a game
-   task. Keep live-game input, Skill activation and signed production promotion
+   Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
-4. This continuation makes the rotation scenario reproducible: leave the app
-   orientation unlocked, expose an eight-second fixture-only rotation window,
-   classify changed frame geometry as `ROTATION_CHANGED`, and prove zero input
-   in Node and pinned Rhino. The API 30 instrumentation and Node/Rhino gates
-   must pass on the exact PR head before merge.
+4. Current safety continuation makes the rotation probe observation-only. The
+   rotation test must always send zero input: report `ROTATION_CHANGED` when
+   display geometry changes and `ROTATION_NOT_DETECTED` when it does not.
+   Node, pinned Rhino and API 30 gates must validate both outcomes.
 5. At the user's request, each completed development milestone includes a
    downloadable APK, commit identity, SHA256SUMS and validation scope. Successful
    main-branch CI publishes the debug APK prerelease in GitHub Releases. Debug
