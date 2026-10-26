@@ -102,7 +102,9 @@ function compatibilityContext() {
 }
 
 test('matching metadata remains fixture-review only and can never activate', () => {
-    const result = SkillContract.evaluateCompatibility(compatibleManifest(), compatibilityContext());
+    const context = compatibilityContext();
+    assert.deepEqual(SkillContract.validateCompatibilityContext(context), []);
+    const result = SkillContract.evaluateCompatibility(compatibleManifest(), context);
     assert.equal(result.status, 'compatible_for_fixture_review');
     assert.equal(result.activationAllowed, false);
     assert.deepEqual(result.reasons,
@@ -143,7 +145,7 @@ test('unpinned draft, malformed context and invalid manifest never become compat
     const context = compatibilityContext();
     context.privateValue = 'SECRET';
     const malformed = SkillContract.evaluateCompatibility(compatibleManifest(), context);
-    assert.deepEqual(malformed, {status:'blocked',activationAllowed:false,reasons:['CONTEXT_INVALID']});
+    assert.deepEqual(malformed, {status:'blocked',activationAllowed:false,reasons:['CONTEXT_SHAPE_FIELDS']});
     assert.equal(JSON.stringify(malformed).includes('SECRET'), false);
 
     const active = compatibleManifest();
@@ -152,4 +154,31 @@ test('unpinned draft, malformed context and invalid manifest never become compat
     assert.equal(rejected.status, 'rejected');
     assert.equal(rejected.activationAllowed, false);
     assert.ok(rejected.reasons.includes('EXECUTION_DISABLED'));
+});
+
+
+test('compatibility context diagnostics are field-specific, stable, and never echo values', () => {
+    const cases = [
+        [c => {c.packageName='PRIVATE_PACKAGE';}, 'CONTEXT_PACKAGE_NAME', 'PRIVATE_PACKAGE'],
+        [c => {c.locale='PRIVATE_LOCALE';}, 'CONTEXT_LOCALE', 'PRIVATE_LOCALE'],
+        [c => {c.apkVersionCode='PRIVATE_VERSION';}, 'CONTEXT_APK_VERSION_CODE', 'PRIVATE_VERSION'],
+        [c => {c.engine.id='PRIVATE_ENGINE';}, 'CONTEXT_ENGINE_ID', 'PRIVATE_ENGINE'],
+        [c => {c.engine.version='PRIVATE_VERSION';}, 'CONTEXT_ENGINE_VERSION', 'PRIVATE_VERSION'],
+        [c => {c.capabilities.push('PRIVATE_CAPABILITY');}, 'CONTEXT_CAPABILITIES', 'PRIVATE_CAPABILITY'],
+        [c => {c.ui.profile='';}, 'CONTEXT_UI_PROFILE', null],
+        [c => {c.ui.anchors=['duplicate','duplicate'];}, 'CONTEXT_UI_ANCHORS', null],
+        [c => {c.privateValue='SECRET_CONTEXT_VALUE';}, 'CONTEXT_SHAPE_FIELDS', 'SECRET_CONTEXT_VALUE']
+    ];
+    for (const [mutate, code, privateValue] of cases) {
+        const context = compatibilityContext();
+        mutate(context);
+        const diagnostics = SkillContract.validateCompatibilityContext(context);
+        assert.ok(diagnostics.includes(code), code);
+        assert.deepEqual(diagnostics, diagnostics.slice().sort(), code);
+        assert.equal(JSON.stringify(diagnostics).includes(privateValue || 'SECRET_CONTEXT_VALUE'), false, code);
+        const result = SkillContract.evaluateCompatibility(compatibleManifest(), context);
+        assert.equal(result.status, 'blocked', code);
+        assert.equal(result.activationAllowed, false, code);
+        assert.deepEqual(result.reasons, diagnostics, code);
+    }
 });

@@ -303,14 +303,6 @@ var SkillContract = (function () {
         return {valid:errors.length === 0, errors:errors};
     }
 
-    function exactShape(value, keys) {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-        var actual = Object.keys(value);
-        if (actual.length !== keys.length) return false;
-        for (var i = 0; i < keys.length; i++)
-            if (!Object.prototype.hasOwnProperty.call(value, keys[i])) return false;
-        return true;
-    }
     function dottedVersion(value) {
         return string(value, /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*)){1,3}$/, 3, 64);
     }
@@ -329,32 +321,37 @@ var SkillContract = (function () {
         result.sort();
         return result;
     }
-    function validCompatibilityContext(context) {
+    // Field-level metadata diagnostics are stable codes; caller values are never returned.
+    function validateCompatibilityContext(context) {
+        var errors = [];
         var packagePattern = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/;
         var localePattern = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
         var digitVersion = /^(0|[1-9]\d{0,29})$/;
-        if (!exactShape(context, ['packageName', 'locale', 'apkVersionCode', 'engine', 'capabilities', 'ui']))
-            return false;
-        if (!string(context.packageName, packagePattern, 3, 160) ||
-            !string(context.locale, localePattern, 2, 35) ||
-            !(context.apkVersionCode === null || string(context.apkVersionCode, digitVersion, 1, 30)))
-            return false;
-        if (!exactShape(context.engine, ['id', 'version']) ||
-            !string(context.engine.id, /^[a-z][a-z0-9-]{1,31}$/, 2, 32) ||
-            ENGINES.indexOf(context.engine.id) < 0 ||
-            !(context.engine.version === null || dottedVersion(context.engine.version)))
-            return false;
-        if (!Array.isArray(context.capabilities) || context.capabilities.length > CAPABILITIES.length ||
-            !context.capabilities.every(function (x) { return CAPABILITIES.indexOf(x) >= 0; }) ||
-            !unique(context.capabilities))
-            return false;
-        if (!exactShape(context.ui, ['profile', 'anchors']) ||
-            !(context.ui.profile === null || string(context.ui.profile, null, 1, 96)) ||
-            !Array.isArray(context.ui.anchors) || context.ui.anchors.length > 32 ||
-            !context.ui.anchors.every(function (x) { return string(x, null, 1, 96); }) ||
-            !unique(context.ui.anchors))
-            return false;
-        return true;
+        if (!object(context, ['packageName', 'locale', 'apkVersionCode', 'engine', 'capabilities', 'ui'],
+            'CONTEXT_SHAPE', errors)) return cleanCodes(errors);
+        requireThat(string(context.packageName, packagePattern, 3, 160), 'CONTEXT_PACKAGE_NAME', errors);
+        requireThat(string(context.locale, localePattern, 2, 35), 'CONTEXT_LOCALE', errors);
+        requireThat(context.apkVersionCode === null ||
+            string(context.apkVersionCode, digitVersion, 1, 30), 'CONTEXT_APK_VERSION_CODE', errors);
+
+        if (object(context.engine, ['id', 'version'], 'CONTEXT_ENGINE_SHAPE', errors)) {
+            requireThat(string(context.engine.id, /^[a-z][a-z0-9-]{1,31}$/, 2, 32) &&
+                ENGINES.indexOf(context.engine.id) >= 0, 'CONTEXT_ENGINE_ID', errors);
+            requireThat(context.engine.version === null || dottedVersion(context.engine.version),
+                'CONTEXT_ENGINE_VERSION', errors);
+        }
+        requireThat(Array.isArray(context.capabilities) && context.capabilities.length <= CAPABILITIES.length &&
+            context.capabilities.every(function (x) { return CAPABILITIES.indexOf(x) >= 0; }) &&
+            unique(context.capabilities), 'CONTEXT_CAPABILITIES', errors);
+
+        if (object(context.ui, ['profile', 'anchors'], 'CONTEXT_UI_SHAPE', errors)) {
+            requireThat(context.ui.profile === null || string(context.ui.profile, null, 1, 96),
+                'CONTEXT_UI_PROFILE', errors);
+            requireThat(Array.isArray(context.ui.anchors) && context.ui.anchors.length <= 32 &&
+                context.ui.anchors.every(function (x) { return string(x, null, 1, 96); }) &&
+                unique(context.ui.anchors), 'CONTEXT_UI_ANCHORS', errors);
+        }
+        return cleanCodes(errors);
     }
 
     // This compares caller-supplied metadata only. It is never device attestation or activation.
@@ -362,8 +359,9 @@ var SkillContract = (function () {
         var manifestErrors = validateDraft(manifest);
         if (manifestErrors.length)
             return {status:'rejected', activationAllowed:false, reasons:manifestErrors};
-        if (!validCompatibilityContext(context))
-            return {status:'blocked', activationAllowed:false, reasons:['CONTEXT_INVALID']};
+        var contextErrors = validateCompatibilityContext(context);
+        if (contextErrors.length)
+            return {status:'blocked', activationAllowed:false, reasons:contextErrors};
 
         var reasons = [], c = manifest.compatibility;
         if (c.packages.indexOf(context.packageName) < 0) reasons.push('PACKAGE_MISMATCH');
@@ -403,6 +401,7 @@ var SkillContract = (function () {
     }
 
     return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft,
+        validateCompatibilityContext:validateCompatibilityContext,
         evaluateCompatibility:evaluateCompatibility};
 })();
 if (typeof module !== 'undefined' && module.exports) {
