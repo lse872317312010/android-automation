@@ -28,7 +28,7 @@ if(baseline.status!==0 || !/^# tests [1-9][0-9]*$/m.test(baseline.stdout || ''))
 const results=[];
 for(const mutation of mutations){
     const dir=path.join(cache,mutation.id);fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir);
-    for(const name of ['src','test','tool','evidence','build.mjs'])
+    for(const name of ['src','test','tool','evidence','examples','schemas','build.mjs'])
         fs.cpSync(path.join(root,name),path.join(dir,name),{recursive:true});
     const target=path.join(dir,mutation.file),source=fs.readFileSync(target,'utf8');
     if(source.split(mutation.from).length!==2)throw new Error('Mutation anchor must be unique: '+mutation.id);
