@@ -6,6 +6,7 @@ const example = require('../examples/starrail-skill-manifest.example.json');
 const SkillContract = require('../src/skill-contract.js');
 
 function copy(value) { return JSON.parse(JSON.stringify(value)); }
+function changed(mutate) { const value=copy(example); mutate(value); return value; }
 
 test('example validates as a draft and parser returns no loadable manifest', () => {
     assert.deepEqual(SkillContract.validateDraft(example), []);
@@ -30,7 +31,7 @@ test('activation, action budget and executable workflow are rejected', () => {
         [m => {m.execution.unknownState = 'continue';}, 'UNKNOWN_STATE']
     ];
     for (const [mutate, code] of cases)
-        assert.ok(SkillContract.validateDraft(mutate(copy(example))).includes(code), code);
+        assert.ok(SkillContract.validateDraft(changed(mutate)).includes(code), code);
 });
 
 test('unknown capabilities and malformed or duplicated compatibility entries fail closed', () => {
@@ -41,7 +42,7 @@ test('unknown capabilities and malformed or duplicated compatibility entries fai
         [m => {m.compatibility.packages[0] = 'com.example..game';}, 'PACKAGES']
     ];
     for (const [mutate, code] of cases)
-        assert.ok(SkillContract.validateDraft(mutate(copy(example))).includes(code), code);
+        assert.ok(SkillContract.validateDraft(changed(mutate)).includes(code), code);
 });
 
 test('version ranges and provenance cannot imply unsupported trust', () => {
@@ -53,7 +54,7 @@ test('version ranges and provenance cannot imply unsupported trust', () => {
         [m => {m.promotion.verifiedOnDevice = true;}, 'PROMOTION_GATE']
     ];
     for (const [mutate, code] of cases)
-        assert.ok(SkillContract.validateDraft(mutate(copy(example))).includes(code), code);
+        assert.ok(SkillContract.validateDraft(changed(mutate)).includes(code), code);
 });
 
 test('unknown fields and malformed shapes are rejected without echoing user data', () => {
