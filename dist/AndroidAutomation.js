@@ -303,7 +303,107 @@ var SkillContract = (function () {
         return {valid:errors.length === 0, errors:errors};
     }
 
-    return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft};
+    function exactShape(value, keys) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+        var actual = Object.keys(value);
+        if (actual.length !== keys.length) return false;
+        for (var i = 0; i < keys.length; i++)
+            if (!Object.prototype.hasOwnProperty.call(value, keys[i])) return false;
+        return true;
+    }
+    function dottedVersion(value) {
+        return string(value, /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*)){1,3}$/, 3, 64);
+    }
+    function compareDottedVersions(a, b) {
+        var left = a.split('.'), right = b.split('.'), count = Math.max(left.length, right.length);
+        for (var i = 0; i < count; i++) {
+            var x = left[i] || '0', y = right[i] || '0', order = versionCompare(x, y);
+            if (order !== 0) return order;
+        }
+        return 0;
+    }
+    function cleanCodes(codes) {
+        var result = [];
+        for (var i = 0; i < codes.length; i++)
+            if (result.indexOf(codes[i]) < 0) result.push(codes[i]);
+        result.sort();
+        return result;
+    }
+    function validCompatibilityContext(context) {
+        var packagePattern = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/;
+        var localePattern = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
+        var digitVersion = /^(0|[1-9]\d{0,29})$/;
+        if (!exactShape(context, ['packageName', 'locale', 'apkVersionCode', 'engine', 'capabilities', 'ui']))
+            return false;
+        if (!string(context.packageName, packagePattern, 3, 160) ||
+            !string(context.locale, localePattern, 2, 35) ||
+            !(context.apkVersionCode === null || string(context.apkVersionCode, digitVersion, 1, 30)))
+            return false;
+        if (!exactShape(context.engine, ['id', 'version']) ||
+            !string(context.engine.id, /^[a-z][a-z0-9-]{1,31}$/, 2, 32) ||
+            ENGINES.indexOf(context.engine.id) < 0 ||
+            !(context.engine.version === null || dottedVersion(context.engine.version)))
+            return false;
+        if (!Array.isArray(context.capabilities) || context.capabilities.length > CAPABILITIES.length ||
+            !context.capabilities.every(function (x) { return CAPABILITIES.indexOf(x) >= 0; }) ||
+            !unique(context.capabilities))
+            return false;
+        if (!exactShape(context.ui, ['profile', 'anchors']) ||
+            !(context.ui.profile === null || string(context.ui.profile, null, 1, 96)) ||
+            !Array.isArray(context.ui.anchors) || context.ui.anchors.length > 32 ||
+            !context.ui.anchors.every(function (x) { return string(x, null, 1, 96); }) ||
+            !unique(context.ui.anchors))
+            return false;
+        return true;
+    }
+
+    // This compares caller-supplied metadata only. It is never device attestation or activation.
+    function evaluateCompatibility(manifest, context) {
+        var manifestErrors = validateDraft(manifest);
+        if (manifestErrors.length)
+            return {status:'rejected', activationAllowed:false, reasons:manifestErrors};
+        if (!validCompatibilityContext(context))
+            return {status:'blocked', activationAllowed:false, reasons:['CONTEXT_INVALID']};
+
+        var reasons = [], c = manifest.compatibility;
+        if (c.packages.indexOf(context.packageName) < 0) reasons.push('PACKAGE_MISMATCH');
+        if (c.locale !== context.locale) reasons.push('LOCALE_MISMATCH');
+
+        if (c.apkVersionCode.min === null || c.apkVersionCode.max === null)
+            reasons.push('APK_VERSION_RANGE_UNPINNED');
+        else if (context.apkVersionCode === null)
+            reasons.push('APK_VERSION_UNKNOWN');
+        else if (versionCompare(context.apkVersionCode, c.apkVersionCode.min) < 0 ||
+            versionCompare(context.apkVersionCode, c.apkVersionCode.max) > 0)
+            reasons.push('APK_VERSION_OUT_OF_RANGE');
+
+        if (c.engine.id !== context.engine.id) reasons.push('ENGINE_MISMATCH');
+        if (c.engine.minVersion === null) reasons.push('ENGINE_VERSION_UNPINNED');
+        else if (!dottedVersion(c.engine.minVersion)) reasons.push('ENGINE_VERSION_UNSUPPORTED');
+        else if (context.engine.version === null) reasons.push('ENGINE_VERSION_UNKNOWN');
+        else if (compareDottedVersions(context.engine.version, c.engine.minVersion) < 0)
+            reasons.push('ENGINE_VERSION_TOO_OLD');
+
+        if (c.uiSignature.profile === null) reasons.push('UI_PROFILE_UNPINNED');
+        else if (context.ui.profile === null) reasons.push('UI_PROFILE_UNKNOWN');
+        else if (c.uiSignature.profile !== context.ui.profile) reasons.push('UI_PROFILE_MISMATCH');
+        if (!c.uiSignature.requiredAnchors.length) reasons.push('UI_ANCHORS_UNSPECIFIED');
+        else if (!c.uiSignature.requiredAnchors.every(function (anchor) {
+            return context.ui.anchors.indexOf(anchor) >= 0;
+        })) reasons.push('UI_ANCHORS_MISSING');
+
+        if (!c.requiredCapabilities.every(function (capability) {
+            return context.capabilities.indexOf(capability) >= 0;
+        })) reasons.push('CAPABILITY_MISSING');
+
+        reasons = cleanCodes(reasons);
+        if (reasons.length) return {status:'blocked', activationAllowed:false, reasons:reasons};
+        return {status:'compatible_for_fixture_review', activationAllowed:false,
+            reasons:['DEVICE_VALIDATION_REQUIRED','DRAFT_ONLY','EXECUTOR_NOT_IMPLEMENTED','SIGNATURE_UNSUPPORTED']};
+    }
+
+    return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft,
+        evaluateCompatibility:evaluateCompatibility};
 })();
 if (typeof module !== 'undefined' && module.exports) {
     if (typeof VisualLoop !== 'undefined') module.exports.SkillContract = SkillContract;
