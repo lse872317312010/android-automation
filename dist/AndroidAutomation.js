@@ -142,6 +142,7 @@ var SkillContract = (function () {
     var ENGINES = ['maafw', 'autojs6-shizuku'];
     var ROOT_KEYS = ['$comment', 'schema', 'skill', 'compatibility', 'execution',
         'verification', 'promotion', 'rollback', 'provenance'];
+    var MAX_REGISTRY_ENTRIES = 32;
 
     function object(value, keys, code, errors) {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -400,9 +401,37 @@ var SkillContract = (function () {
             reasons:['DEVICE_VALIDATION_REQUIRED','DRAFT_ONLY','EXECUTOR_NOT_IMPLEMENTED','SIGNATURE_UNSUPPORTED']};
     }
 
+    // Validate an in-memory draft catalog only. This never installs or activates entries.
+    function validateDraftRegistry(manifests) {
+        var issues = [], count = Array.isArray(manifests) ? manifests.length : 0;
+        if (!Array.isArray(manifests))
+            issues.push({index:null,codes:['REGISTRY_ARRAY_REQUIRED']});
+        else if (manifests.length === 0)
+            issues.push({index:null,codes:['REGISTRY_EMPTY']});
+        else if (manifests.length > MAX_REGISTRY_ENTRIES)
+            issues.push({index:null,codes:['REGISTRY_TOO_LARGE']});
+        else {
+            var identities = [];
+            for (var i = 0; i < manifests.length; i++) {
+                var errors = validateDraft(manifests[i]);
+                if (errors.length) {
+                    issues.push({index:i,codes:errors});
+                    continue;
+                }
+                var skill = manifests[i].skill;
+                var identity = JSON.stringify([skill.gameId, skill.id, skill.version]);
+                if (identities.indexOf(identity) >= 0)
+                    issues.push({index:i,codes:['DUPLICATE_SKILL_VERSION']});
+                else identities.push(identity);
+            }
+        }
+        return {status:issues.length ? 'rejected' : 'valid_draft_registry',
+            activationAllowed:false,count:count,issues:issues};
+    }
+
     return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft,
         validateCompatibilityContext:validateCompatibilityContext,
-        evaluateCompatibility:evaluateCompatibility};
+        evaluateCompatibility:evaluateCompatibility, validateDraftRegistry:validateDraftRegistry};
 })();
 if (typeof module !== 'undefined' && module.exports) {
     if (typeof VisualLoop !== 'undefined') module.exports.SkillContract = SkillContract;

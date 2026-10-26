@@ -32,6 +32,16 @@ function runRuntimeCase(spec) {
         if (unknown.valid || unknown.errors.indexOf('CAPABILITIES') < 0)
             throw new Error(spec.name + ': unknown capability was accepted');
         manifest.compatibility.requiredCapabilities.pop();
+        var second = JSON.parse(JSON.stringify(manifest));
+        second.skill.id = 'fixture.safe_second';
+        var registry = SkillContract.validateDraftRegistry([manifest, second]);
+        if (registry.status !== 'valid_draft_registry' || registry.activationAllowed !== false || registry.count !== 2)
+            throw new Error(spec.name + ': two-draft registry contract failed');
+        registry = SkillContract.validateDraftRegistry([manifest, JSON.parse(JSON.stringify(manifest))]);
+        if (registry.status !== 'rejected' || registry.activationAllowed !== false ||
+            registry.issues.length !== 1 || registry.issues[0].index !== 1 ||
+            registry.issues[0].codes.indexOf('DUPLICATE_SKILL_VERSION') < 0)
+            throw new Error(spec.name + ': duplicate registry version was accepted');
         manifest.compatibility.apkVersionCode = {min:'100',max:'200'};
         manifest.compatibility.uiSignature = {profile:'fixture-v1',requiredAnchors:['menu']};
         manifest.compatibility.engine.minVersion = '6.7.0';

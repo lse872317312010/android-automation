@@ -54,7 +54,7 @@ receipt, not hardware attestation. Failed validation removes an older receipt.
 The native UI tests use a dedicated Activity with no launcher or exported entry.
 Only instrumentation starts it. Screenshots stay in memory and are recycled;
 no screenshot files, OCR text or input permissions are added to the app manifest.
-The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor and its field-level context diagnostics use fixture values and always report zero taps.
+The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, field-level context diagnostics and two-entry draft registry use fixture values and always report zero taps.
 The new UI tests use Android Instrumentation and UiAutomation directly; they
 do not execute the production JavaScript adapter. The PASS token is read from
 the native view, not recognized by OCR. Focus checks are best-effort, not atomic
