@@ -50,7 +50,7 @@ var VisualLoop = (function () {
             // Only aggregate counts are returned. Never export recognized text or screen content.
             snapshots.push({ocrCount: f.items.length, targetCount: matches});
             last = f;
-            if (i === 0) io.sleep(700);
+            if (i === 0) io.sleep(spec.confirmationDelayMs || 700);
         }
         return {status: 'observed', summary: {
             observedFrames: snapshots.length,
@@ -334,24 +334,31 @@ function start(mode, rotationTest) {
                             ocrCount: items.length, captureMs: captureMs, ocrMs: ocrMs,
                             durationMs: Date.now() - at});
                         if (rotationTest && report.frames.length === 1)
-                            status('首帧已截取：请在 8 秒内旋转手机；检测到方向变化会阻止点击。');
+                            status('首帧已截取：请在 8 秒内旋转手机。本测试始终不会触控。');
                         persist(report);
                         return frame;
                     } finally { img.recycle(); }
                 }
             };
-            var result = mode === 'starrail_probe' ? VisualLoop.probe(io, spec) : VisualLoop.run(io, spec);
-            report.status = result.status;
-            if (mode === 'starrail_probe') {
-                report.visualSummary = result.summary;
-                if (clientVersion) {
-                    writeClientVersionBaseline(pkg, clientVersion);
-                    report.clientVersionObservation = 'read_only_only_not_task_validated';
-                }
+            var result = (mode === 'starrail_probe' || rotationTest) ?
+                VisualLoop.probe(io, spec) : VisualLoop.run(io, spec);
+            if (rotationTest) {
+                report.status = 'blocked';
+                report.reason = 'ROTATION_NOT_DETECTED';
+                report.verificationFrames = 0;
+                report.deviceValidation = 'not_established';
+            } else {
+                report.status = result.status;
+                if (mode === 'starrail_probe') {
+                    report.visualSummary = result.summary;
+                    if (clientVersion) {
+                        writeClientVersionBaseline(pkg, clientVersion);
+                        report.clientVersionObservation = 'read_only_only_not_task_validated';
+                    }
+                } else report.verificationFrames = result.verificationFrames;
+                report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' :
+                    (mode === 'starrail_probe' ? 'read_only_observed_only' : 'single_step_observed_only');
             }
-            else report.verificationFrames = result.verificationFrames;
-            report.deviceValidation = mode === 'fixture' ? 'fixture_observed_only' :
-                (mode === 'starrail_probe' ? 'read_only_observed_only' : 'single_step_observed_only');
         } catch (e) {
             report.status = cancelled ? 'cancelled' : 'blocked';
             report.reason = cancelled ? 'CANCELLED' : diagnosticReason(e);

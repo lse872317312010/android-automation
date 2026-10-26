@@ -74,6 +74,16 @@
     "reason": "ROTATION_CHANGED"
   },
   {
+    "name": "rotation fixture never touches when no rotation occurs",
+    "options": {},
+    "status": "blocked",
+    "press": "rotation",
+    "taps": 0,
+    "actionCount": 0,
+    "captureStops": 1,
+    "reason": "ROTATION_NOT_DETECTED"
+  },
+  {
     "name": "stale after persistence",
     "options": {
       "inputPersistenceDelay": 2600

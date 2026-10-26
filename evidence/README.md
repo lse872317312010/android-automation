@@ -15,7 +15,7 @@ observed values with expected values to make validation pass.
 | capture_denied | Decline screen capture during selftest | Blocked, no input |
 | shizuku_denied | Revoke AutoJs6's Shizuku authorization, launch selftest | Blocked, no input; restore authorization afterwards |
 | foreground_switch | Leave selftest before input is requested | FOREGROUND_CHANGED, no input |
-| rotation | Relaunch the script, choose “2. 自测旋转保护（仅测试页）”, then rotate the phone during the 8-second prompt after the first frame. Enable system auto-rotate first if needed. | ROTATION_CHANGED, actionCount 0, no observed input; if Android/OEM settings prevent rotation, leave pending and record a blocker outside the record |
+| rotation | Relaunch the script, choose “2. 自测旋转保护（仅测试页）”, then rotate the phone during the 8-second prompt after the first frame. Enable system auto-rotate first if needed. | ROTATION_CHANGED, actionCount 0, no observed input. If rotation is not detected, expect ROTATION_NOT_DETECTED with zero input and leave the case pending; record an Android/OEM blocker outside the record. |
 | stop | Press Stop while selftest is pending | Cancelled, no input |
 | cold_restart | Terminate a pending selftest before input, relaunch script | Previous run becomes interrupted, never completed or automatically resumed |
 | starrail_read_only | Run the read-only button, switch to Star Rail in countdown | Observed, zero input; does not establish a working game task |

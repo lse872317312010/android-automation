@@ -41,6 +41,17 @@ test('dedicated rotation fixture detects geometry drift before requesting input'
     assert.ok(h.ui.status.history.some(s => s.indexOf('8 秒内旋转手机') >= 0));
 });
 
+test('rotation probe reports missing rotation without sending input', () => {
+    const h=fakeHost();
+    h.press('rotation');
+    assert.equal(h.report().status, 'blocked');
+    assert.equal(h.report().reason, 'ROTATION_NOT_DETECTED');
+    assert.equal(h.report().actionCount, 0);
+    assert.equal(h.report().verificationFrames, 0);
+    assert.equal(h.state.tapCommands, 0);
+    assert.equal(h.report().frames.length, 2);
+});
+
 test('mock read-only Star Rail probe cannot dispatch input', () => {
     const h = fakeHost({foreground: 'com.miHoYo.hkrpg'});
     h.press('observe');
