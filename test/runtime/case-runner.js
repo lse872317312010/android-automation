@@ -39,6 +39,8 @@ function runRuntimeCase(spec) {
             engine:{id:'maafw',version:'6.10.0'},
             capabilities:['capture.fullscreen','recognize.ocr','act.tap','verify.semantic'],
             ui:{profile:'fixture-v1',anchors:['menu']}};
+        if (SkillContract.validateCompatibilityContext(context).length !== 0)
+            throw new Error(spec.name + ': valid compatibility metadata was rejected');
         var assessment = SkillContract.evaluateCompatibility(manifest, context);
         if (assessment.status !== 'compatible_for_fixture_review' || assessment.activationAllowed !== false)
             throw new Error(spec.name + ': metadata match activated or failed');
@@ -47,6 +49,12 @@ function runRuntimeCase(spec) {
         if (assessment.status !== 'blocked' || assessment.activationAllowed !== false ||
             assessment.reasons.indexOf('ENGINE_VERSION_TOO_OLD') < 0)
             throw new Error(spec.name + ': engine drift did not block');
+        context.privateValue = 'PRIVATE_CONTEXT_VALUE';
+        assessment = SkillContract.evaluateCompatibility(manifest, context);
+        if (assessment.status !== 'blocked' || assessment.activationAllowed !== false ||
+            assessment.reasons.indexOf('CONTEXT_SHAPE_FIELDS') < 0 ||
+            JSON.stringify(assessment).indexOf('PRIVATE_CONTEXT_VALUE') >= 0)
+            throw new Error(spec.name + ': malformed context diagnostics leaked or passed');
         return {name:spec.name,status:'pass',taps:0};
     }
     var h=__host;

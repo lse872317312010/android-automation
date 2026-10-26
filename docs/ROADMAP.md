@@ -9,7 +9,7 @@ Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALIT
 | --- | --- | --- | --- | --- |
 | **M0: CI/CD & test harness** | **P0: do first** | Node LTS test matrix, deterministic mocked device and seeded fault injection; coverage/syntax/generator consistency gates; release candidate checksum; test/evidence convention | Green mandatory GitHub Actions on exact merge SHA; reproducible artifact and checksum; no unknown unsafe tap in negative scenarios | **In progress** |
 | **M1: native Redmi smoke acceptance** | P0 after M0 | AutoJs6 6.7.0 + Shizuku permission, capture, OCR, one user-approved action, verification, safe stop, recover interrupted | Redacted report from physical Redmi and user-observed test, separate from offline CI | Not done |
-| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser + metadata-only compatibility assessor; no loader or executor |
+| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser + metadata-only compatibility assessor with context diagnostics; no loader or executor |
 | **M3: Star Rail vertical slice** | P1 | One low-risk daily-path Skill with game package+locale checks, ROI/templates/OCR, deterministic postconditions; no blind clicks | Success/failure evidence on Redmi and fixture regression across version changes | Not done |
 | **M4: AI repair and memory** | P2 | failure classifier, experience retrieval (AgentRR pattern), AI repair candidate (Mobile-Agent-E pattern), Maa-native graph proposal (MaaFwPhoneAI pattern) | Changes in 3 synthetic UI families produce non-privileged candidates, pass old/new regression + explicit review; no direct AI tap | Not done |
 | **M5: upstream & lifecycle** | P2 | Monitor StarRailCopilot / March7thAssistant task changes, extract candidate asset diffs, CI-based review, signed staged resources and rollback | Upstream change → review PR → test → signed candidate → device acceptance | Not done |
@@ -122,7 +122,7 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 ## Current execution queue (2026-10-26)
 
-1. The preceding main milestone `d360a2d0c7b2009b0042f5a49874ff118a51d761`
+1. The preceding main milestone `a6ecb7b028baa6b8c5dc2e0f1bceb10884cbc65e`
    passed Node 20/22, pinned AutoJs6 Rhino and API 30 framework gates. Its
    debug test APK, script, framework receipt and checksums are in the matching
    GitHub Release. This is harness/fixture evidence, not a production capture
@@ -136,16 +136,14 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
    in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
    Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
-4. The first M2 contract milestone merged as `d360a2d` with a strict draft-only
-   JSON Schema, bundled pure-JavaScript validator and offline Node CLI. It
-   rejects activation, nonzero input/retry budgets, executable workflow paths,
-   unknown capabilities, unsupported signatures and malformed compatibility
-   metadata. The current continuation adds a metadata-only compatibility
-   assessor: mismatches block; a full match can only return
-   `compatible_for_fixture_review` with `activationAllowed: false`. Inputs are
-   caller-supplied labels, not device attestation. This assessor does not load,
-   execute or activate Skills and cannot tap. Node, Rhino and API 30 gates cover
-   the contract; passing main builds publish the test-only APK.
+4. The M2 draft-only schema and validator merged as `d360a2d`; the metadata-only
+   assessor merged as `a6ecb7b`. This continuation exports
+   `validateCompatibilityContext` with stable, sorted field-level error codes.
+   Malformed metadata blocks without echoing caller values. A full match remains
+   `compatible_for_fixture_review` with `activationAllowed: false`; caller
+   metadata is not device attestation. No Skill loader, executor or input path is
+   added. Node, Rhino and API 30 gates cover the contract; passing main builds
+   publish the test-only APK.
 5. Each accepted development milestone includes a commit-bound APK, script,
    SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
    debug signed; later builds may require reinstalling. It does not complete

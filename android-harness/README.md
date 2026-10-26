@@ -14,9 +14,9 @@ Tests:
    AutoJs6 Rhino jar. Thirty exercise the inert host adapter with real Android
    Rect fields and Bitmap dimension methods; UI, permission, capture source,
    OCR, foreground and Shizuku remain substitutions. One validates the draft
-   Skill contract and metadata-only compatibility assessor; even a full metadata
-   match keeps activation false and requests no device I/O. These are not
-   end-to-end AutoJs6 tests.
+   Skill contract and metadata-only compatibility assessor, including stable
+   malformed-context codes; even a full metadata match keeps activation false
+   and requests no device I/O. These are not end-to-end AutoJs6 tests.
 2. Check real Bitmap copy/recycle ownership with Android framework objects.
 3. Check actual app-private File.renameTo replacement/failure preservation.
 4. Open an unexported native fixture Activity, capture its actual emulator pixels,
@@ -54,7 +54,7 @@ receipt, not hardware attestation. Failed validation removes an older receipt.
 The native UI tests use a dedicated Activity with no launcher or exported entry.
 Only instrumentation starts it. Screenshots stay in memory and are recycled;
 no screenshot files, OCR text or input permissions are added to the app manifest.
-The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor is exercised with fixture values and always reports zero taps.
+The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor and its field-level context diagnostics use fixture values and always report zero taps.
 The new UI tests use Android Instrumentation and UiAutomation directly; they
 do not execute the production JavaScript adapter. The PASS token is read from
 the native view, not recognized by OCR. Focus checks are best-effort, not atomic

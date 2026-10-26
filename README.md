@@ -11,7 +11,7 @@
 - [游戏 Agent 研究矩阵](docs/GAME-AGENT-RESEARCH.md) — MaaFwPhoneAI、MobiAgent/AgentRR、Mobile-Agent-E、MaaFramework、MaaEnd、BetterGI、星铁上游等。
 - [CI/CD、测试环境与质量门禁](docs/QUALITY-GATES.md) — Node LTS、随机故障注入、覆盖率、生成构建一致性、模拟器与真机的分级验收。
 - [路线图与具体完成条件](docs/ROADMAP.md) — M0–M6、各阶段退出条件、Skill/版本管理接口草案。
-- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，也可离线运行 [CLI](tool/validate-skill-manifest.cjs)。元数据兼容评估只比较调用方提供的字段，完整匹配也只返回 fixture review 状态且 `activationAllowed: false`；它不验证真机身份、不加载或执行 Skill。
+- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，也可离线运行 [CLI](tool/validate-skill-manifest.cjs)。元数据兼容评估只比较调用方提供的字段；`validateCompatibilityContext` 返回稳定字段错误码且不回显输入值。完整匹配也只返回 fixture review 状态且 `activationAllowed: false`；它不验证真机身份、不加载或执行 Skill。
 
 **“0 bug”是质量目标，不能作为未经证明的绝对保证。** 实际执行标准是零已知 P0/P1 缺陷、全量强制测试通过、失败场景零误触控和零错误完成宣称。CI 仅验证硬件接口以上的可模拟策略；真机权限、MediaProjection、OCR 和 Shizuku 的行为必须独立验收。
 

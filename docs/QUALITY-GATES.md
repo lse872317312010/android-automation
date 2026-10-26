@@ -44,7 +44,7 @@ The merged code covers T0/T1 and a **partial T3 harness**: 30 shared script scen
 - PR merge and tagged candidate releases must not bypass test/coverage/generation gates.
 - A successful main-branch API 30 workflow publishes a commit-bound, debug-signed test APK, bundled script, framework receipt and checksums as a GitHub prerelease. This is not a stable product build or hardware approval.
 - Production-device support requires a separate signed manual acceptance record; no automated stable release until that workflow exists.
-- The first M2 contract slice ships a strict draft-only JSON Schema and pure JavaScript validator in the AutoJs6 bundle. Its CLI and Node/Rhino/API 30 tests reject activation, nonzero budgets, executable workflows, unknown capabilities and unsupported signatures. The follow-on compatibility assessor compares caller-supplied package, locale, version, engine, capability and UI metadata only; a full match is `compatible_for_fixture_review` with `activationAllowed: false`. It provides no device attestation, Skill loader or executor.
+- The M2 contract ships a strict draft-only JSON Schema, parser and metadata-only compatibility assessor in the AutoJs6 bundle. `validateCompatibilityContext` reports stable field-level codes without echoing caller values; malformed metadata blocks. A full compatibility match is only `compatible_for_fixture_review` with `activationAllowed: false`. Node/Rhino/API 30 tests cover both paths. There is no device attestation, Skill loader or executor.
 
 ## Required repository branch rule (administrative setting; not yet confirmed enabled)
 
