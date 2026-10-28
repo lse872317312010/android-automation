@@ -95,12 +95,11 @@ and includes `SHA256SUMS`. It remains a debug-signed prerelease, not stable-sign
 
 ## OCR performance and ambiguity regression
 
-The OCR fixture is fullscreen and contains only task text. The recognized bitmap
-is half the screenshot width and height; its boxes are mapped back using actual
-width/height ratios before policy decisions. Native click delivery and two OCR
-result frames test this mapping. All capture, resizing and recognition time
-counts against the original 2500 ms freshness limit; timestamps are not reset.
-This image preprocessing is specific to the instrumentation adapter.
+The OCR fixture is fullscreen and contains only task text. The full-resolution screenshot
+is recognized without coordinate scaling. Native click delivery and two OCR
+result frames exercise the OCR-derived pixel location. All capture and recognition
+time counts against the original 2500 ms freshness limit; timestamps are not reset.
+The token uses the same nonzero-leading six-digit format as the AutoJs6 fixture.
 
 Real OCR exposed mixed-confidence duplicate labels. The portable input policy
 now rejects multiple matching texts before filtering confidence; a weak or

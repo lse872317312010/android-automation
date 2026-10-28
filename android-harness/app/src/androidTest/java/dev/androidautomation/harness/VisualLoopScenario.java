@@ -38,7 +38,7 @@ public class VisualLoopScenario {
     }
     public void run(String mode, String expected, int taps) throws Exception {
         // Fresh token per scenario; OCR must recover it from pixels, not view text.
-        String token = String.format(Locale.ROOT, "%06d", SystemClock.uptimeMillis() % 1000000);
+        String token = String.format(Locale.ROOT, "%06d", 100000 + SystemClock.uptimeMillis() % 900000);
         var app = instrumentation.getTargetContext();
         assertEquals("Bundled fixture OCR must have no Internet permission",
             android.content.pm.PackageManager.PERMISSION_DENIED,
@@ -136,14 +136,7 @@ public class VisualLoopScenario {
             finally { screen.recycle(); }
             assertNotNull(pixels);
             int fullWidth = pixels.getWidth(), fullHeight = pixels.getHeight();
-            Bitmap image;
-            // Fixed fixture glyphs remain above ML Kit's recommended 16 px.
-            // Actual scale factors map detection rectangles back to the screen.
-            try { image = Bitmap.createScaledBitmap(pixels, Math.max(1, fullWidth / 2),
-                Math.max(1, fullHeight / 2), true); }
-            finally { pixels.recycle(); }
-            double scaleX = fullWidth / (double) image.getWidth();
-            double scaleY = fullHeight / (double) image.getHeight();
+            Bitmap image = pixels;
             lastCaptureMs = now() - capturedAt;
             long ocrStarted = now();
             Task<Text> task = null;
@@ -157,10 +150,8 @@ public class VisualLoopScenario {
                     Rect b = line.getBoundingBox();
                     if (b == null) continue;
                     items.put(new JSONObject().put("text", line.getText()).put("confidence", line.getConfidence())
-                        .put("bounds", new JSONObject().put("left", (int)Math.floor(b.left * scaleX))
-                            .put("top", (int)Math.floor(b.top * scaleY))
-                            .put("right", (int)Math.ceil(b.right * scaleX))
-                            .put("bottom", (int)Math.ceil(b.bottom * scaleY))));
+                        .put("bounds", new JSONObject().put("left", b.left).put("top", b.top)
+                            .put("right", b.right).put("bottom", b.bottom)));
                 }
                 var metrics = new android.util.DisplayMetrics();
                 display().getRealMetrics(metrics);

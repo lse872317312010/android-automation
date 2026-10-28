@@ -160,9 +160,9 @@ retain their separate gates.
 
 Native attempts exposed ML Kit initialization/Application-context packaging
 requirements and CPU OCR exceeding the unchanged 2500 ms freshness budget. The
-model is bundled in the debug host, network permissions are removed, and fixture
-image preprocessing maps OCR boxes back to original screen pixels. Native input
-delivery plus two result OCR frames exercise that mapping.
+model is bundled in the debug host, network permissions are removed, and a fullscreen
+fixture and bounded model warmup reduce irrelevant work. Native input delivery
+plus two result OCR frames exercise full-resolution screenshot coordinates.
 
 Real mixed-confidence duplicates exposed a portable policy defect. Input
 uniqueness now considers all matching texts before confidence filtering. The

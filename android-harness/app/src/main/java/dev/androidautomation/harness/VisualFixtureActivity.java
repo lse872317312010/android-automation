@@ -31,14 +31,14 @@ public class VisualFixtureActivity extends Activity {
         TextView outcome = new TextView(this);
         outcome.setText("already".equals(mode) ? "PASS " + token : "");
         outcome.setTextColor(Color.BLACK);
-        outcome.setTextSize(30);
+        outcome.setTextSize(36);
         outcome.setTypeface(Typeface.MONOSPACE);
         outcome.setGravity(Gravity.CENTER);
         int count = "duplicate".equals(mode) ? 2 : 1;
         for (int i = 0; i < count; i++) {
             Button button = new Button(this);
             button.setText("TEST " + token);
-            button.setTextSize(30);
+            button.setTextSize(36);
             button.setTypeface(Typeface.MONOSPACE);
             button.setTextColor(Color.BLACK);
             button.setAllCaps(false);
