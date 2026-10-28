@@ -33,6 +33,15 @@ test('never taps an ambiguous target',()=>{
     const f=before();f.items.push(f.items[0]);const t=setup([f]);
     assert.throws(()=>core.run(t.io,t.spec),/AMBIGUOUS_TARGET/);assert.equal(t.taps(),0);
 });
+test('weak or malformed-confidence matching duplicates never establish a unique target',()=>{
+    for(const confidence of [0.2, NaN, undefined, Infinity]) {
+        const f=before();
+        f.items.push({...f.items[0],confidence});
+        const t=setup([f,f,after(),after()]);
+        assert.throws(()=>core.run(t.io,t.spec),/AMBIGUOUS_TARGET/);
+        assert.equal(t.taps(),0);
+    }
+});
 test('frame geometry changes before input are classified as rotation',()=>{
     const changedFrames=[
         frame('TEST 123456',{width:1200,displayWidth:1200}),

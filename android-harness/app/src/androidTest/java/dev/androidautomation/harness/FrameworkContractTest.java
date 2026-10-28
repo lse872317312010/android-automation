@@ -60,7 +60,7 @@ public class FrameworkContractTest {
                 new String(bytes.toByteArray(), StandardCharsets.UTF_8));
         }
         JSONArray cases = new JSONArray(asset("cases.json"));
-        assertEquals(31, cases.length());
+        assertEquals(32, cases.length());
         for (int i = 0; i < cases.length(); i++) {
             JSONObject scenario = cases.getJSONObject(i);
             org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();

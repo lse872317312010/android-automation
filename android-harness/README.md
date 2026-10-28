@@ -10,8 +10,8 @@ JUnit/instrumentation reports when they are produced.
 
 Tests:
 
-1. Run 31 shared script scenarios on Android's ART runtime using the pinned
-   AutoJs6 Rhino jar. Thirty exercise the inert host adapter with real Android
+1. Run 32 shared script scenarios on Android's ART runtime using the pinned
+   AutoJs6 Rhino jar. Thirty-one exercise the inert host adapter with real Android
    Rect fields and Bitmap dimension methods; UI, permission, capture source,
    OCR, foreground and Shizuku remain substitutions. One validates the draft
    Skill contract and metadata-only compatibility assessor, including stable
@@ -70,7 +70,7 @@ receipt, not hardware attestation. Failed validation removes an older receipt.
 The native UI tests use a dedicated Activity with no launcher or exported entry.
 Only instrumentation starts it. Screenshots stay in memory and are recycled;
 no screenshot files, OCR text or input permissions are added to the app manifest.
-The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, field-level context diagnostics and two-entry draft registry use fixture values and always report zero taps.
+The existing 32 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, field-level context diagnostics and two-entry draft registry use fixture values and always report zero taps.
 The new UI tests use Android Instrumentation and UiAutomation directly; they
 do not execute the production JavaScript adapter. The original pixel-color tests
 read the PASS token from the native view; the six OCR-loop tests recognize it
@@ -92,3 +92,18 @@ same files as a prerelease in GitHub Releases tagged `milestone-<full commit SHA
 PR builds still retain short-lived Actions artifacts for review; the user-facing
 installation link is the published GitHub Release. Each milestone is immutable
 and includes `SHA256SUMS`. It remains a debug-signed prerelease, not stable-signed.
+
+## OCR performance and ambiguity regression
+
+The OCR fixture is fullscreen and contains only task text. The recognized bitmap
+is half the screenshot width and height; its boxes are mapped back using actual
+width/height ratios before policy decisions. Native click delivery and two OCR
+result frames test this mapping. All capture, resizing and recognition time
+counts against the original 2500 ms freshness limit; timestamps are not reset.
+This image preprocessing is specific to the instrumentation adapter.
+
+Real OCR exposed mixed-confidence duplicate labels. The portable input policy
+now rejects multiple matching texts before filtering confidence; a weak or
+malformed-confidence duplicate cannot establish uniqueness. The regression fails
+on the preceding implementation and runs in Node and the shared Rhino matrix.
+One additional targeted mutation deliberately restores the unsafe filter.

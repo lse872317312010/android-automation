@@ -128,10 +128,19 @@ public class VisualLoopScenario {
             long capturedAt = now();
             Bitmap screen = instrumentation.getUiAutomation().takeScreenshot();
             assertNotNull("Native screenshot unavailable", screen);
-            Bitmap image;
-            try { image = screen.copy(Bitmap.Config.ARGB_8888, false); }
+            Bitmap pixels;
+            try { pixels = screen.copy(Bitmap.Config.ARGB_8888, false); }
             finally { screen.recycle(); }
-            assertNotNull(image);
+            assertNotNull(pixels);
+            int fullWidth = pixels.getWidth(), fullHeight = pixels.getHeight();
+            Bitmap image;
+            // Fixed fixture glyphs remain above ML Kit's recommended 16 px.
+            // Actual scale factors map detection rectangles back to the screen.
+            try { image = Bitmap.createScaledBitmap(pixels, Math.max(1, fullWidth / 2),
+                Math.max(1, fullHeight / 2), true); }
+            finally { pixels.recycle(); }
+            double scaleX = fullWidth / (double) image.getWidth();
+            double scaleY = fullHeight / (double) image.getHeight();
             lastCaptureMs = now() - capturedAt;
             long ocrStarted = now();
             Task<Text> task = null;
@@ -146,20 +155,23 @@ public class VisualLoopScenario {
                     Rect b = line.getBoundingBox();
                     if (b == null) continue;
                     items.put(new JSONObject().put("text", line.getText()).put("confidence", line.getConfidence())
-                        .put("bounds", new JSONObject().put("left", b.left).put("top", b.top)
-                            .put("right", b.right).put("bottom", b.bottom)));
+                        .put("bounds", new JSONObject().put("left", (int)Math.floor(b.left * scaleX))
+                            .put("top", (int)Math.floor(b.top * scaleY))
+                            .put("right", (int)Math.ceil(b.right * scaleX))
+                            .put("bottom", (int)Math.ceil(b.bottom * scaleY))));
                 }
                 var metrics = new android.util.DisplayMetrics();
                 display().getRealMetrics(metrics);
                 frames++;
                 lastFrameMs = now() - capturedAt;
                 lastOcrMs = now() - ocrStarted;
-                lastWidth = image.getWidth(); lastHeight = image.getHeight(); lastLines = items.length();
+                lastWidth = fullWidth; lastHeight = fullHeight; lastLines = items.length();
                 android.util.Log.i("AutomationOCR", "mode=" + mode + " frame=" + frames +
-                    " width=" + image.getWidth() + " height=" + image.getHeight() +
+                    " width=" + fullWidth + " height=" + fullHeight +
+                    " ocrWidth=" + image.getWidth() + " ocrHeight=" + image.getHeight() +
                     " elapsedMs=" + lastFrameMs + " captureMs=" + lastCaptureMs +
                     " ocrMs=" + lastOcrMs + " lines=" + items.length());
-                return new JSONObject().put("width", image.getWidth()).put("height", image.getHeight())
+                return new JSONObject().put("width", fullWidth).put("height", fullHeight)
                     .put("displayWidth", metrics.widthPixels).put("displayHeight", metrics.heightPixels)
                     .put("rotation", display().getRotation()).put("capturedAt", capturedAt)
                     .put("items", items).toString();

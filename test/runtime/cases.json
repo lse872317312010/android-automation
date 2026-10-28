@@ -292,5 +292,14 @@
     "name": "draft skill contract parser remains non-executable",
     "kind": "skill-contract",
     "options": {}
+  },
+  {
+    "name": "weak matching duplicate blocks input",
+    "options": {
+      "weakDuplicate": true
+    },
+    "status": "blocked",
+    "reason": "AMBIGUOUS_TARGET",
+    "captureStops": 1
   }
 ]
