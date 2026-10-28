@@ -23,9 +23,9 @@ Tests:
    inject one DOWN/UP gesture with Instrumentation, verify the unique PASS token
    in the native view and the changed panel color in two screenshots.
 5. Close the fixture and confirm the fixture input helper refuses a gesture.
-6. Five additional OCR-loop tests execute the actual `src/core.js` policy in
+6. Six additional OCR-loop tests execute the actual `src/core.js` policy in
    pinned Rhino: success, duplicate targets, ineffective input, already complete
-   and read-only. A dedicated unexported Activity renders a fresh six-digit
+   read-only and intentionally delayed frames. A dedicated unexported Activity renders a fresh six-digit
    token. UiAutomation captures real emulator pixels; bundled ML Kit Chinese
    `16.0.1` recognizes text/boxes/confidence; Instrumentation sends a single
    DOWN/UP gesture at the OCR-derived location. Success requires two subsequent
@@ -35,6 +35,10 @@ Tests:
    model using a real Application context. The debug manifest removes Internet
    and network-state permissions; the native OCR tests assert Internet permission
    is denied. The model is bundled; no Play-services model download is required.
+   The Nexus S profile uses a 480x800 display to reduce CPU OCR cost while
+   retaining the 2500 ms freshness gate. The delayed-frame case must fail with
+   `STALE_FRAME` and zero input. Aggregate logs contain dimensions, elapsed time
+   and line count; no screenshot files or OCR text are exported.
 
 This is a partial T3 framework contract, not T3 capture/permission acceptance,
 T4 physical Redmi acceptance, OCR accuracy or actual game validation. Do not
@@ -56,7 +60,7 @@ Native output is synthetic test evidence. After successful emulator tests, the d
 and scoped receipt are uploaded as a 30-day milestone artifact by
 this workflow; source provenance is in `test/runtime/rhino-lock.json`.
 
-The workflow also requires the exact ten native JUnit testcase identities,
+The workflow also requires the exact eleven native JUnit testcase identities,
 with no missing, duplicate, skipped, failed or unexpected cases. A separate
 Python standard-library validator has negative report fixtures in the ordinary
 CI suite. On success, `test-results/android-framework.json` records the checkout
@@ -69,7 +73,7 @@ no screenshot files, OCR text or input permissions are added to the app manifest
 The existing 31 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, field-level context diagnostics and two-entry draft registry use fixture values and always report zero taps.
 The new UI tests use Android Instrumentation and UiAutomation directly; they
 do not execute the production JavaScript adapter. The original pixel-color tests
-read the PASS token from the native view; the five OCR-loop tests recognize it
+read the PASS token from the native view; the six OCR-loop tests recognize it
 from screenshots instead. Focus checks are best-effort, not atomic
 with Android input dispatch. Run only on the dedicated disposable CI emulator.
 

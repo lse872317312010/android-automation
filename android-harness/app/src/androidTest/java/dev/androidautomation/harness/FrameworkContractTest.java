@@ -37,6 +37,9 @@ public class FrameworkContractTest {
     @Test public void ocrLoopReadOnlyNeverRequestsInput() throws Exception {
         new VisualLoopScenario().run("readonly", "observed", 0);
     }
+    @Test public void ocrLoopRejectsDelayedFrame() throws Exception {
+        new VisualLoopScenario().run("stale", "STALE_FRAME", 0);
+    }
     private final Context instrumentationContext = InstrumentationRegistry.getInstrumentation().getContext();
     private String asset(String name) throws Exception {
         try (var in = instrumentationContext.getAssets().open(name)) {

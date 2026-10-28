@@ -79,6 +79,8 @@ jobs:
           api-level: 30
           arch: x86_64
           target: default
+          # 480x800 display keeps CPU OCR inside the unchanged frame-age budget.
+          profile: Nexus S
           disable-animations: true
           script: gradle -p android-harness :app:connectedDebugAndroidTest --stacktrace
       - name: Require complete native JUnit evidence

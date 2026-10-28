@@ -19,9 +19,11 @@ public class VisualFixtureActivity extends Activity {
         String mode = getIntent().getStringExtra("mode");
         String token = getIntent().getStringExtra("token");
         LinearLayout panel = new LinearLayout(this);
+        float density = getResources().getDisplayMetrics().density;
+        int gap = Math.round(16 * density);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setGravity(Gravity.CENTER);
-        panel.setPadding(24, 24, 24, 24);
+        panel.setPadding(gap, gap, gap, gap);
         panel.setBackgroundColor(Color.WHITE);
         TextView outcome = new TextView(this);
         outcome.setText("already".equals(mode) ? "PASS " + token : "READY");
@@ -44,11 +46,11 @@ public class VisualFixtureActivity extends Activity {
                     outcome.setText("PASS " + token);
                 }
             });
-            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, 200);
-            layout.bottomMargin = 48;
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, Math.round(96 * density));
+            layout.bottomMargin = gap;
             panel.addView(button, layout);
         }
-        panel.addView(outcome, new LinearLayout.LayoutParams(-1, 160));
+        panel.addView(outcome, new LinearLayout.LayoutParams(-1, Math.round(64 * density)));
         setContentView(panel);
     }
 }

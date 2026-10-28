@@ -51,7 +51,7 @@ public class VisualLoopScenario {
         try {
             recognizer = TextRecognition.getClient(new ChineseTextRecognizerOptions.Builder().build());
             long deadline = SystemClock.uptimeMillis() + 5000;
-            Device device = new Device(fixture, recognizer);
+            Device device = new Device(fixture, recognizer, mode);
             while (!device.focused() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(50);
             assertTrue("OCR fixture did not acquire focus", device.focused());
             // Warm the bundled model before the policy's frame-age/deadline budget.
@@ -74,7 +74,9 @@ public class VisualLoopScenario {
                 "stage:function(s){},tap:function(x,y){device.tap(x,y);}};" +
                 "var result;try{result=VisualLoop." + ("readonly".equals(mode) ? "probe" : "run") +
                 "(io," + spec + ").status;}catch(e){result=String(e.message);};result;";
-            assertEquals(expected, Context.toString(cx.evaluateString(scope, script, "visual-loop", 1, null)));
+            String result = Context.toString(cx.evaluateString(scope, script, "visual-loop", 1, null));
+            assertEquals("mode=" + mode + " frames=" + device.frames + " lastFrameMs=" + device.lastFrameMs,
+                expected, result);
             assertEquals(taps, device.requests);
             instrumentation.waitForIdleSync();
             // Independent delivery counter; success still requires policy OCR verification.
@@ -91,9 +93,11 @@ public class VisualLoopScenario {
     public class Device {
         private final VisualFixtureActivity fixture;
         private final TextRecognizer recognizer;
+        private final String mode;
         int requests, frames;
-        Device(VisualFixtureActivity fixture, TextRecognizer recognizer) {
-            this.fixture = fixture; this.recognizer = recognizer;
+        long lastFrameMs;
+        Device(VisualFixtureActivity fixture, TextRecognizer recognizer, String mode) {
+            this.fixture = fixture; this.recognizer = recognizer; this.mode = mode;
         }
         public long now() { return SystemClock.uptimeMillis(); }
         public void pause(long ms) { SystemClock.sleep(ms); }
@@ -104,10 +108,9 @@ public class VisualLoopScenario {
             return value[0];
         }
         public String foreground() {
-            var root = instrumentation.getUiAutomation().getRootInActiveWindow();
-            if (root == null) return "";
-            try { return focused() ? String.valueOf(root.getPackageName()) : ""; }
-            finally { root.recycle(); }
+            // Platform focus belongs to this specific fixture Activity.
+            // Avoid accessibility-tree synchronization in every policy guard.
+            return focused() ? fixture.getPackageName() : "";
         }
         private android.view.Display display() { return fixture.getWindowManager().getDefaultDisplay(); }
         public void checkGeometry(int width, int height, int rotation) {
@@ -128,6 +131,9 @@ public class VisualLoopScenario {
             assertNotNull(image);
             Task<Text> task = null;
             try {
+                // Warm frame + first observation have completed. Delay the
+                // second observation in a dedicated zero-input regression.
+                if ("stale".equals(mode) && frames == 2) SystemClock.sleep(2700);
                 task = recognizer.process(InputImage.fromBitmap(image, 0));
                 Text text = Tasks.await(task, 20, TimeUnit.SECONDS);
                 JSONArray items = new JSONArray();
@@ -141,6 +147,10 @@ public class VisualLoopScenario {
                 var metrics = new android.util.DisplayMetrics();
                 display().getRealMetrics(metrics);
                 frames++;
+                lastFrameMs = now() - capturedAt;
+                android.util.Log.i("AutomationOCR", "mode=" + mode + " frame=" + frames +
+                    " width=" + image.getWidth() + " height=" + image.getHeight() +
+                    " elapsedMs=" + lastFrameMs + " lines=" + items.length());
                 return new JSONObject().put("width", image.getWidth()).put("height", image.getHeight())
                     .put("displayWidth", metrics.widthPixels).put("displayHeight", metrics.heightPixels)
                     .put("rotation", display().getRotation()).put("capturedAt", capturedAt)

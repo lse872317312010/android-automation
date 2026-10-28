@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 
 CLASS = "dev.androidautomation.harness.FrameworkContractTest"
 EXPECTED = {
+    "ocrLoopRejectsDelayedFrame",
     "ocrLoopVerifiesRealScreenshots",
     "ocrLoopRejectsDuplicateTargets",
     "ocrLoopRejectsIgnoredInput",
