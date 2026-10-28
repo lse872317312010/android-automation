@@ -26,7 +26,16 @@ import org.mozilla.javascript.ScriptableObject;
 
 /** Production portable policy, with real emulator pixels/OCR/input. No AutoJs/Shizuku. */
 public class VisualLoopScenario {
+    private static boolean mlKitInitialized;
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+    private static synchronized void initializeMlKit(Instrumentation instrumentation) {
+        if (!mlKitInitialized) {
+            // androidTest-only providers are not started with the target app.
+            // Use the test APK context, which owns the bundled model/assets.
+            com.google.mlkit.common.MlKit.initialize(instrumentation.getContext());
+            mlKitInitialized = true;
+        }
+    }
     private String asset(String name) throws Exception {
         try (var stream = instrumentation.getContext().getAssets().open(name)) {
             var bytes = new java.io.ByteArrayOutputStream();
@@ -43,9 +52,11 @@ public class VisualLoopScenario {
         Intent intent = new Intent(app, VisualFixtureActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("mode", mode).putExtra("token", token);
         VisualFixtureActivity fixture = (VisualFixtureActivity) instrumentation.startActivitySync(intent);
-        TextRecognizer recognizer = TextRecognition.getClient(new ChineseTextRecognizerOptions.Builder().build());
+        TextRecognizer recognizer = null;
         Context cx = null;
         try {
+            initializeMlKit(instrumentation);
+            recognizer = TextRecognition.getClient(new ChineseTextRecognizerOptions.Builder().build());
             long deadline = SystemClock.uptimeMillis() + 5000;
             Device device = new Device(fixture, recognizer);
             while (!device.focused() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(50);
@@ -78,7 +89,7 @@ public class VisualLoopScenario {
             assertTrue("No real screenshot was recognized", device.frames >= 2);
         } finally {
             if (cx != null) Context.exit();
-            recognizer.close();
+            if (recognizer != null) recognizer.close();
             instrumentation.runOnMainSync(fixture::finish);
             instrumentation.waitForIdleSync();
         }
@@ -122,8 +133,9 @@ public class VisualLoopScenario {
             try { image = screen.copy(Bitmap.Config.ARGB_8888, false); }
             finally { screen.recycle(); }
             assertNotNull(image);
-            Task<Text> task = recognizer.process(InputImage.fromBitmap(image, 0));
+            Task<Text> task = null;
             try {
+                task = recognizer.process(InputImage.fromBitmap(image, 0));
                 Text text = Tasks.await(task, 20, TimeUnit.SECONDS);
                 JSONArray items = new JSONArray();
                 for (Text.TextBlock block : text.getTextBlocks()) for (Text.Line line : block.getLines()) {
@@ -142,7 +154,7 @@ public class VisualLoopScenario {
                     .put("items", items).toString();
             } finally {
                 // On timeout the native task may still own the bitmap.
-                if (task.isComplete()) image.recycle();
+                if (task == null || task.isComplete()) image.recycle();
                 else task.addOnCompleteListener(Runnable::run, ignored -> image.recycle());
             }
         }
