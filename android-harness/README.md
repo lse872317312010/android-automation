@@ -31,6 +31,10 @@ Tests:
    DOWN/UP gesture at the OCR-derived location. Success requires two subsequent
    OCR frames matching the exact PASS token. The native click counter separately
    checks delivery. No view location/text is supplied to the policy.
+   ML Kit belongs to the debug host APK so Android initializes its provider and
+   model using a real Application context. The debug manifest removes Internet
+   and network-state permissions; the native OCR tests assert Internet permission
+   is denied. The model is bundled; no Play-services model download is required.
 
 This is a partial T3 framework contract, not T3 capture/permission acceptance,
 T4 physical Redmi acceptance, OCR accuracy or actual game validation. Do not

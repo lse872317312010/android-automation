@@ -26,16 +26,7 @@ import org.mozilla.javascript.ScriptableObject;
 
 /** Production portable policy, with real emulator pixels/OCR/input. No AutoJs/Shizuku. */
 public class VisualLoopScenario {
-    private static boolean mlKitInitialized;
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-    private static synchronized void initializeMlKit(Instrumentation instrumentation) {
-        if (!mlKitInitialized) {
-            // androidTest-only providers are not started with the target app.
-            // Use the test APK context, which owns the bundled model/assets.
-            com.google.mlkit.common.MlKit.initialize(instrumentation.getContext());
-            mlKitInitialized = true;
-        }
-    }
     private String asset(String name) throws Exception {
         try (var stream = instrumentation.getContext().getAssets().open(name)) {
             var bytes = new java.io.ByteArrayOutputStream();
@@ -49,13 +40,15 @@ public class VisualLoopScenario {
         // Fresh token per scenario; OCR must recover it from pixels, not view text.
         String token = String.format(Locale.ROOT, "%06d", SystemClock.uptimeMillis() % 1000000);
         var app = instrumentation.getTargetContext();
+        assertEquals("Bundled fixture OCR must have no Internet permission",
+            android.content.pm.PackageManager.PERMISSION_DENIED,
+            app.checkSelfPermission(android.Manifest.permission.INTERNET));
         Intent intent = new Intent(app, VisualFixtureActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("mode", mode).putExtra("token", token);
         VisualFixtureActivity fixture = (VisualFixtureActivity) instrumentation.startActivitySync(intent);
         TextRecognizer recognizer = null;
         Context cx = null;
         try {
-            initializeMlKit(instrumentation);
             recognizer = TextRecognition.getClient(new ChineseTextRecognizerOptions.Builder().build());
             long deadline = SystemClock.uptimeMillis() + 5000;
             Device device = new Device(fixture, recognizer);
