@@ -4,3 +4,5 @@ android-harness/.gradle/
 android-harness/**/build/
 android-harness/app/libs/
 android-harness/local.properties
+.pycache/
+__pycache__/

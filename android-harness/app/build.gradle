@@ -22,11 +22,14 @@ dependencies {
     implementation files('libs/autojs6-rhino.jar')
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    // Bundled model: same coordinate/version as the pinned AutoJs6 upstream.
+    androidTestImplementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
 }
 def repoRoot = rootProject.projectDir.parentFile
 tasks.register('stageContractAssets', Sync) {
     from(new File(repoRoot, 'test/runtime')) { include 'host-fixture.js', 'case-runner.js', 'cases.json' }
     from(new File(repoRoot, 'dist')) { include 'AndroidAutomation.js' }
+    from(new File(repoRoot, 'src')) { include 'core.js' }
     into layout.buildDirectory.dir('generated/contractAssets')
 }
 tasks.configureEach {

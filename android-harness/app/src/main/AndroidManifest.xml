@@ -7,5 +7,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".FixtureActivity" android:exported="false" />
+        <activity android:name=".VisualFixtureActivity" android:exported="false" />
     </application>
 </manifest>
