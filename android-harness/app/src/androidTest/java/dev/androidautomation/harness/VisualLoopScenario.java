@@ -75,7 +75,9 @@ public class VisualLoopScenario {
                 "var result;try{result=VisualLoop." + ("readonly".equals(mode) ? "probe" : "run") +
                 "(io," + spec + ").status;}catch(e){result=String(e.message);};result;";
             String result = Context.toString(cx.evaluateString(scope, script, "visual-loop", 1, null));
-            assertEquals("mode=" + mode + " frames=" + device.frames + " lastFrameMs=" + device.lastFrameMs,
+            assertEquals("mode=" + mode + " frames=" + device.frames + " lastFrameMs=" + device.lastFrameMs +
+                " captureMs=" + device.lastCaptureMs + " ocrMs=" + device.lastOcrMs +
+                " geometry=" + device.lastWidth + "x" + device.lastHeight + " lines=" + device.lastLines,
                 expected, result);
             assertEquals(taps, device.requests);
             instrumentation.waitForIdleSync();
@@ -95,7 +97,8 @@ public class VisualLoopScenario {
         private final TextRecognizer recognizer;
         private final String mode;
         int requests, frames;
-        long lastFrameMs;
+        long lastFrameMs, lastCaptureMs, lastOcrMs;
+        int lastWidth, lastHeight, lastLines;
         Device(VisualFixtureActivity fixture, TextRecognizer recognizer, String mode) {
             this.fixture = fixture; this.recognizer = recognizer; this.mode = mode;
         }
@@ -129,6 +132,8 @@ public class VisualLoopScenario {
             try { image = screen.copy(Bitmap.Config.ARGB_8888, false); }
             finally { screen.recycle(); }
             assertNotNull(image);
+            lastCaptureMs = now() - capturedAt;
+            long ocrStarted = now();
             Task<Text> task = null;
             try {
                 // Warm frame + first observation have completed. Delay the
@@ -148,9 +153,12 @@ public class VisualLoopScenario {
                 display().getRealMetrics(metrics);
                 frames++;
                 lastFrameMs = now() - capturedAt;
+                lastOcrMs = now() - ocrStarted;
+                lastWidth = image.getWidth(); lastHeight = image.getHeight(); lastLines = items.length();
                 android.util.Log.i("AutomationOCR", "mode=" + mode + " frame=" + frames +
                     " width=" + image.getWidth() + " height=" + image.getHeight() +
-                    " elapsedMs=" + lastFrameMs + " lines=" + items.length());
+                    " elapsedMs=" + lastFrameMs + " captureMs=" + lastCaptureMs +
+                    " ocrMs=" + lastOcrMs + " lines=" + items.length());
                 return new JSONObject().put("width", image.getWidth()).put("height", image.getHeight())
                     .put("displayWidth", metrics.widthPixels).put("displayHeight", metrics.heightPixels)
                     .put("rotation", display().getRotation()).put("capturedAt", capturedAt)

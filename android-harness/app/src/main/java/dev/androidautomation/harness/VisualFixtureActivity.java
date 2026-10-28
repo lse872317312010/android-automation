@@ -16,6 +16,9 @@ public class VisualFixtureActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().getDecorView().setSystemUiVisibility(
+            android.view.View.SYSTEM_UI_FLAG_FULLSCREEN | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         String mode = getIntent().getStringExtra("mode");
         String token = getIntent().getStringExtra("token");
         LinearLayout panel = new LinearLayout(this);
@@ -26,7 +29,7 @@ public class VisualFixtureActivity extends Activity {
         panel.setPadding(gap, gap, gap, gap);
         panel.setBackgroundColor(Color.WHITE);
         TextView outcome = new TextView(this);
-        outcome.setText("already".equals(mode) ? "PASS " + token : "READY");
+        outcome.setText("already".equals(mode) ? "PASS " + token : "");
         outcome.setTextColor(Color.BLACK);
         outcome.setTextSize(30);
         outcome.setTypeface(Typeface.MONOSPACE);
@@ -42,7 +45,7 @@ public class VisualFixtureActivity extends Activity {
             button.setOnClickListener(view -> {
                 deliveredTaps++;
                 if (!"ignored".equals(mode)) {
-                    button.setText("DONE");
+                    button.setText("");
                     outcome.setText("PASS " + token);
                 }
             });
