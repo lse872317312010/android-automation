@@ -107,3 +107,9 @@ now rejects multiple matching texts before filtering confidence; a weak or
 malformed-confidence duplicate cannot establish uniqueness. The regression fails
 on the preceding implementation and runs in Node and the shared Rhino matrix.
 One additional targeted mutation deliberately restores the unsafe filter.
+
+The CI AVD has four virtual CPU cores and 2048 MB RAM. Each scenario performs
+three bounded, input-free OCR warmup captures before starting the policy
+transaction. Once policy starts, real elapsed capture/OCR time counts against
+the unchanged freshness/deadline checks; the deliberately delayed policy frame
+still must block with zero input. This does not establish Redmi performance.

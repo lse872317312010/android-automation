@@ -55,7 +55,8 @@ public class VisualLoopScenario {
             while (!device.focused() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(50);
             assertTrue("OCR fixture did not acquire focus", device.focused());
             // Warm the bundled model before the policy's frame-age/deadline budget.
-            device.observe();
+            for (int i = 0; i < 3; i++) device.observe();
+            device.warming = false;
             cx = Context.enter();
             cx.setLanguageVersion(Context.VERSION_ES6);
             cx.setOptimizationLevel(-1);
@@ -97,6 +98,8 @@ public class VisualLoopScenario {
         private final TextRecognizer recognizer;
         private final String mode;
         int requests, frames;
+        private boolean warming = true;
+        private int policyObservations;
         long lastFrameMs, lastCaptureMs, lastOcrMs;
         int lastWidth, lastHeight, lastLines;
         Device(VisualFixtureActivity fixture, TextRecognizer recognizer, String mode) {
@@ -145,9 +148,8 @@ public class VisualLoopScenario {
             long ocrStarted = now();
             Task<Text> task = null;
             try {
-                // Warm frame + first observation have completed. Delay the
-                // second observation in a dedicated zero-input regression.
-                if ("stale".equals(mode) && frames == 2) SystemClock.sleep(2700);
+                // Delay the second policy frame after bounded model warmup.
+                if (!warming && ++policyObservations == 2 && "stale".equals(mode)) SystemClock.sleep(2700);
                 task = recognizer.process(InputImage.fromBitmap(image, 0));
                 Text text = Tasks.await(task, 20, TimeUnit.SECONDS);
                 JSONArray items = new JSONArray();
