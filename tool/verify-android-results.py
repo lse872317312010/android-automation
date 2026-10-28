@@ -8,6 +8,12 @@ import xml.etree.ElementTree as ET
 
 CLASS = "dev.androidautomation.harness.FrameworkContractTest"
 EXPECTED = {
+    "ocrLoopRejectsDelayedFrame",
+    "ocrLoopVerifiesRealScreenshots",
+    "ocrLoopRejectsDuplicateTargets",
+    "ocrLoopRejectsIgnoredInput",
+    "ocrLoopRejectsAlreadyCompleted",
+    "ocrLoopReadOnlyNeverRequestsInput",
     "fixtureScreenshotAndSingleInjectedTap",
     "closedFixtureRejectsInput",
     "shippedBundleWithAndroidValues",
@@ -60,6 +66,8 @@ def main():
     report = {
         "schema": "android-framework-contract.v1",
         "tier": "partial_T3_framework",
+        "visualLoop": "emulator_pixels_mlkit_portable_policy",
+        "productionAdapterValidated": False,
         "deviceValidation": "not_established",
         "commit": args.commit,
         "scriptSha256": hashlib.sha256(Path(args.bundle).read_bytes()).hexdigest(),

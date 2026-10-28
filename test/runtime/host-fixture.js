@@ -92,7 +92,9 @@ var __host = (function (o) {
             item.bounds=new __interop.Insets(200,100,300,400);
             state.javaValues++;
         }
-        return [item];
+        var rows = [item];
+        if (o.weakDuplicate) rows.push({text:item.text, confidence:0.2, bounds:item.bounds});
+        return rows;
     }}};
     return {globals:{ui:ui,android:android,context:context,images:images,ocr:ocr,files:files,shizuku:shizuku,
         Date:MockDate,activity:{setRequestedOrientation:function(){state.orientationRequests++;}},

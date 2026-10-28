@@ -148,3 +148,25 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
    SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
    debug signed; later builds may require reinstalling. It does not complete
    M0/M1 or imply Redmi/game acceptance.
+
+## Real OCR continuation (2026-10-28)
+
+PR #21 adds real emulator screenshot/OCR/input verification around the portable
+policy: success, duplicate labels, ineffective input, already-complete, read-only
+and delayed frames. All eleven native JUnit identities are required before a
+receipt or milestone APK is packaged. This remains a fixture adapter; production
+AutoJs6 MediaProjection, permission lifecycle, Shizuku, Redmi and game acceptance
+retain their separate gates.
+
+Native attempts exposed ML Kit initialization/Application-context packaging
+requirements and CPU OCR exceeding the unchanged 2500 ms freshness budget. The
+model is bundled in the debug host, network permissions are removed, and a fullscreen
+fixture and bounded model warmup reduce irrelevant work. Native input delivery
+plus two result OCR frames exercise full-resolution screenshot coordinates.
+
+Real mixed-confidence duplicates exposed a portable policy defect. Input
+uniqueness now considers all matching texts before confidence filtering. The
+new regression fails on the preceding implementation; it is shared across Node,
+Rhino and the Android script matrix. A targeted mutation restores the unsafe
+filter to check regression sensitivity. See PR #21 and issue #5 for exact-commit
+hosted results; local results alone do not satisfy the native gate.

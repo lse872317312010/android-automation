@@ -5,6 +5,9 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const mutations=[
+    {id:'ignore-weak-matching-duplicate',file:'src/core.js',
+        from:'return normalize(v.text) === normalize(text);',
+        to:'return normalize(v.text) === normalize(text) && isFinite(v.confidence) && v.confidence >= confidence;'},
     {id:'raw-error-export',file:'src/android.js',from:"allowed.indexOf(message) >= 0 ? message : 'RUNTIME_ERROR'",to:'message'},
     {id:'delete-baseline-before-replace',file:'src/android.js',from:'if (!new java.io.File(tmp).renameTo(dest))',
         to:'dest.delete();\n    if (!new java.io.File(tmp).renameTo(dest))'},
@@ -49,5 +52,5 @@ for(const mutation of mutations){
 }
 fs.mkdirSync(path.join(root,'test-results'),{recursive:true});
 fs.writeFileSync(path.join(root,'test-results/mutations.json'),JSON.stringify({
-    scope:'10 targeted regressions only; not an exhaustive mutation score',cases:results},null,2)+'\n');
+    scope:mutations.length+' targeted regressions only; not an exhaustive mutation score',cases:results},null,2)+'\n');
 if(results.some(x=>x.status!=='detected'))process.exitCode=1;

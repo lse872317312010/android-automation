@@ -5,11 +5,16 @@ var VisualLoop = (function () {
     function normalize(s) { return String(s).replace(/\s+/g, '').toUpperCase(); }
     function fail(code) { throw new Error(code); }
     function target(frame, text, confidence) {
-        var hits = frame.items.filter(function (v) {
-            return normalize(v.text) === normalize(text) &&
-                isFinite(v.confidence) && v.confidence >= confidence;
+        var matches = frame.items.filter(function (v) {
+            return normalize(v.text) === normalize(text);
         });
-        if (hits.length !== 1) fail(hits.length ? 'AMBIGUOUS_TARGET' : 'TARGET_NOT_FOUND');
+        // A weak matching duplicate still makes the scene ambiguous. Apply
+        // confidence only after establishing one textual candidate.
+        if (matches.length > 1) fail('AMBIGUOUS_TARGET');
+        var hits = matches.filter(function (v) {
+            return isFinite(v.confidence) && v.confidence >= confidence;
+        });
+        if (hits.length !== 1) fail('TARGET_NOT_FOUND');
         var b = hits[0].bounds;
         if (![b.left, b.top, b.right, b.bottom].every(isFinite) ||
             b.left < 0 || b.top < 0 || b.right > frame.width || b.bottom > frame.height ||

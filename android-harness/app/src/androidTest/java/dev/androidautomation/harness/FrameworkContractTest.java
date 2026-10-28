@@ -22,6 +22,24 @@ import java.nio.file.Files;
 /** Framework and inert native UI contracts; no production adapter, OCR or Shizuku. */
 @RunWith(AndroidJUnit4.class)
 public class FrameworkContractTest {
+    @Test public void ocrLoopVerifiesRealScreenshots() throws Exception {
+        new VisualLoopScenario().run("success", "verified", 1);
+    }
+    @Test public void ocrLoopRejectsDuplicateTargets() throws Exception {
+        new VisualLoopScenario().run("duplicate", "AMBIGUOUS_TARGET", 0);
+    }
+    @Test public void ocrLoopRejectsIgnoredInput() throws Exception {
+        new VisualLoopScenario().run("ignored", "POSTCONDITION_NOT_MET", 1);
+    }
+    @Test public void ocrLoopRejectsAlreadyCompleted() throws Exception {
+        new VisualLoopScenario().run("already", "ALREADY_AT_RESULT", 0);
+    }
+    @Test public void ocrLoopReadOnlyNeverRequestsInput() throws Exception {
+        new VisualLoopScenario().run("readonly", "observed", 0);
+    }
+    @Test public void ocrLoopRejectsDelayedFrame() throws Exception {
+        new VisualLoopScenario().run("stale", "STALE_FRAME", 0);
+    }
     private final Context instrumentationContext = InstrumentationRegistry.getInstrumentation().getContext();
     private String asset(String name) throws Exception {
         try (var in = instrumentationContext.getAssets().open(name)) {
@@ -42,7 +60,7 @@ public class FrameworkContractTest {
                 new String(bytes.toByteArray(), StandardCharsets.UTF_8));
         }
         JSONArray cases = new JSONArray(asset("cases.json"));
-        assertEquals(31, cases.length());
+        assertEquals(32, cases.length());
         for (int i = 0; i < cases.length(); i++) {
             JSONObject scenario = cases.getJSONObject(i);
             org.mozilla.javascript.Context cx = org.mozilla.javascript.Context.enter();
