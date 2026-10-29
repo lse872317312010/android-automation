@@ -229,3 +229,62 @@ test('draft registry rejects missing, empty, and oversized catalogs', () => {
     assert.equal(result.count, 33);
     assert.deepEqual(result.issues, [{index:null,codes:['REGISTRY_TOO_LARGE']}]);
 });
+
+
+test('draft registry rollback references resolve only within the same Skill history', () => {
+    const older = copy(example);
+    const candidate = copy(example);
+    candidate.skill.version = '0.0.1-draft';
+    candidate.rollback.lastKnownGoodVersion = older.skill.version;
+    const valid = SkillContract.validateDraftRegistry([older, candidate]);
+    assert.deepEqual(valid, {
+        status:'valid_draft_registry',activationAllowed:false,count:2,issues:[]
+    });
+
+    const missing = copy(candidate);
+    missing.rollback.lastKnownGoodVersion = '9.9.9-draft';
+    const missingResult = SkillContract.validateDraftRegistry([older, missing]);
+    assert.deepEqual(missingResult.issues, [{index:1,codes:['ROLLBACK_TARGET_NOT_FOUND']}]);
+
+    const otherSkill = copy(older);
+    otherSkill.skill.id = 'starrail.other_skill';
+    const mismatched = copy(candidate);
+    mismatched.rollback.lastKnownGoodVersion = older.skill.version;
+    const mismatchedResult = SkillContract.validateDraftRegistry([otherSkill, mismatched]);
+    assert.deepEqual(mismatchedResult.issues, [{index:1,codes:['ROLLBACK_TARGET_NOT_FOUND']}]);
+});
+
+test('draft registry rejects self-referential and cyclic rollback histories', () => {
+    const self = copy(example);
+    self.rollback.lastKnownGoodVersion = self.skill.version;
+    assert.deepEqual(SkillContract.validateDraftRegistry([self]).issues,
+        [{index:0,codes:['ROLLBACK_SELF_REFERENCE']}]);
+
+    const older = copy(example);
+    const newer = copy(example);
+    newer.skill.version = '0.0.1-draft';
+    older.rollback.lastKnownGoodVersion = newer.skill.version;
+    newer.rollback.lastKnownGoodVersion = older.skill.version;
+    const cycle = SkillContract.validateDraftRegistry([older, newer]);
+    assert.equal(cycle.status, 'rejected');
+    assert.equal(cycle.activationAllowed, false);
+    assert.deepEqual(cycle.issues, [
+        {index:0,codes:['ROLLBACK_CYCLE']},
+        {index:1,codes:['ROLLBACK_CYCLE']}
+    ]);
+    assert.equal(JSON.stringify(cycle).includes(older.skill.id), false);
+
+    const leading = copy(example);
+    const cycleTarget = copy(example);
+    const cycleSource = copy(example);
+    leading.skill.version = '0.0.2-draft';
+    leading.rollback.lastKnownGoodVersion = '0.0.1-draft';
+    cycleTarget.skill.version = '0.0.1-draft';
+    cycleTarget.rollback.lastKnownGoodVersion = '0.0.0-draft';
+    cycleSource.rollback.lastKnownGoodVersion = '0.0.1-draft';
+    const leadingCycle = SkillContract.validateDraftRegistry([leading, cycleTarget, cycleSource]);
+    assert.deepEqual(leadingCycle.issues, [
+        {index:1,codes:['ROLLBACK_CYCLE']},
+        {index:2,codes:['ROLLBACK_CYCLE']}
+    ]);
+});

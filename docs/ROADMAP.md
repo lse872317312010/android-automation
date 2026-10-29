@@ -9,7 +9,7 @@ Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALIT
 | --- | --- | --- | --- | --- |
 | **M0: CI/CD & test harness** | **P0: do first** | Node LTS test matrix, deterministic mocked device and seeded fault injection; coverage/syntax/generator consistency gates; release candidate checksum; test/evidence convention | Green mandatory GitHub Actions on exact merge SHA; reproducible artifact and checksum; no unknown unsafe tap in negative scenarios | **In progress** |
 | **M1: native Redmi smoke acceptance** | P0 after M0 | AutoJs6 6.7.0 + Shizuku permission, capture, OCR, one user-approved action, verification, safe stop, recover interrupted | Redacted report from physical Redmi and user-observed test, separate from offline CI | Not done |
-| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser, compatibility assessor and in-memory registry checks; no loader or executor |
+| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser, compatibility assessor and rollback-aware registry checks; no loader or executor |
 | **M3: Star Rail vertical slice** | P1 | One low-risk daily-path Skill with game package+locale checks, ROI/templates/OCR, deterministic postconditions; no blind clicks | Success/failure evidence on Redmi and fixture regression across version changes | Not done |
 | **M4: AI repair and memory** | P2 | failure classifier, experience retrieval (AgentRR pattern), AI repair candidate (Mobile-Agent-E pattern), Maa-native graph proposal (MaaFwPhoneAI pattern) | Changes in 3 synthetic UI families produce non-privileged candidates, pass old/new regression + explicit review; no direct AI tap | Not done |
 | **M5: upstream & lifecycle** | P2 | Monitor StarRailCopilot / March7thAssistant task changes, extract candidate asset diffs, CI-based review, signed staged resources and rollback | Upstream change → review PR → test → signed candidate → device acceptance | Not done |
@@ -120,30 +120,30 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 - [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
 - [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.
 
-## Current execution queue (2026-10-26)
+## Current execution queue (2026-10-29)
 
-1. The preceding main milestone `831d09c1c6884d9ad8b84d2170db95d33ded535a`
-   passed Node 20/22, pinned AutoJs6 Rhino and API 30 framework gates. Its
-   debug test APK, script, framework receipt and checksums are in the matching
-   GitHub Release. This is harness/fixture evidence, not a production capture
-   adapter or Redmi/game acceptance.
-2. M0 remains open for main-branch ruleset enforcement and a disposable red-PR
-   merge-rejection check. The linked GitHub account has repository admin
+1. The latest APK milestone is PR #21 merge `76a8e00dc600a4de847425fd041ff38092a8083c`.
+   Its Node 20/22, Rhino, API 30 and eleven native fixture tests passed. Android
+   SDK signature verification, package/source/receipt/checksum binding, draft
+   Release upload/readback and final publication passed; assets are in the
+   matching GitHub Release. This is fixture evidence, not Redmi/game acceptance.
+2. M0 release integrity gates are implemented and passed on the exact PR #21
+   merge. M0 remains open for main-branch ruleset enforcement and a disposable
+   red-PR merge-rejection check. The linked GitHub account has repository admin
    permission, but the active connector exposes no branch-rule write action.
-   Production MediaProjection, permission lifecycle, OCR and Shizuku input do
-   not yet have complete native instrumentation.
+   Production MediaProjection, permission lifecycle and Shizuku input still lack
+   complete native instrumentation.
 3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
    in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
    Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
-4. The M2 draft-only schema and validator merged as `d360a2d`; the metadata
-   assessor merged as `a6ecb7b`; field-level context diagnostics merged as
-   `831d09c`. This continuation adds `validateDraftRegistry` for in-memory draft
-   catalogs of up to 32 entries. It rejects invalid entries and duplicate
-   game/skill/version identities while permitting distinct versions for review.
-   A valid registry is still draft data: no install, load, execute or activate
-   path exists. Node, Rhino and API 30 gates cover the contract; passing main
-   builds publish the test-only APK.
+4. M2 draft contracts merged in sequence: schema/parser (`d360a2d`), metadata
+   assessor (`a6ecb7b`), context diagnostics (`831d09c`) and draft registry
+   (`1705dd9`). This continuation checks `lastKnownGoodVersion` references
+   against the same game/skill history, rejects missing and self targets and
+   detects rollback cycles. This validates metadata only; it performs no
+   rollback, install, load, execution or activation. Node, Rhino and API 30 gates
+   cover the contract; passing main builds publish the test-only APK.
 5. Each accepted development milestone includes a commit-bound APK, script,
    SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
    debug signed; later builds may require reinstalling. It does not complete
@@ -176,12 +176,13 @@ hosted results; local results alone do not satisfy the native gate.
 - PR #21 merged at `76a8e00dc600a4de847425fd041ff38092a8083c`. Main
   quality run #40656064175 and native/release run #40656064072 passed; all
   eleven native tests passed and the matching APK/script Release is available.
-- Add Android SDK signature verification and a package consistency gate binding
+- Android SDK signature verification and the package consistency gate bind the
   APK-embedded script, standalone script, source checkout, native receipt and
-  complete checksum manifest. The preceding real Release passes the consistency
-  validator; new gates require their own exact-commit hosted evidence.
-- Stage new releases as drafts, download and verify uploaded bytes against the
-  build manifest, then publish. Test failed readback, interrupted draft recovery
-  and published-release immutability offline with a fake CLI and real validator.
+  checksum manifest; PR #21's exact main commit passed.
+- `publish-milestone.sh` creates a draft, downloads and verifies uploaded bytes
+  against the build manifest, then publishes. `test/publish_test.py` covers bad
+  readback, interrupted draft recovery and published-release immutability using
+  a fake `gh` CLI and the real byte validator. These gates passed before the
+  PR #21 Release was published.
 - Main branch-rule enforcement, production adapter/permission lifecycle, physical
   Redmi, live-game acceptance and stable signed promotion remain separate work.
