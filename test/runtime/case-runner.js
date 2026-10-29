@@ -42,6 +42,29 @@ function runRuntimeCase(spec) {
             registry.issues.length !== 1 || registry.issues[0].index !== 1 ||
             registry.issues[0].codes.indexOf('DUPLICATE_SKILL_VERSION') < 0)
             throw new Error(spec.name + ': duplicate registry version was accepted');
+        var olderVersion = JSON.parse(JSON.stringify(manifest));
+        var candidateVersion = JSON.parse(JSON.stringify(manifest));
+        candidateVersion.skill.version = '0.0.1-draft';
+        candidateVersion.rollback.lastKnownGoodVersion = olderVersion.skill.version;
+        var rollbackRegistry = SkillContract.validateDraftRegistry([olderVersion, candidateVersion]);
+        if (rollbackRegistry.status !== 'valid_draft_registry' || rollbackRegistry.activationAllowed !== false)
+            throw new Error(spec.name + ': valid rollback reference was rejected');
+        candidateVersion.rollback.lastKnownGoodVersion = '9.9.9-draft';
+        rollbackRegistry = SkillContract.validateDraftRegistry([olderVersion, candidateVersion]);
+        if (rollbackRegistry.status !== 'rejected' || rollbackRegistry.activationAllowed !== false ||
+            rollbackRegistry.issues[0].codes.indexOf('ROLLBACK_TARGET_NOT_FOUND') < 0)
+            throw new Error(spec.name + ': missing rollback target was accepted');
+        var cycleOlder = JSON.parse(JSON.stringify(manifest));
+        var cycleNewer = JSON.parse(JSON.stringify(manifest));
+        cycleNewer.skill.version = '0.0.1-draft';
+        cycleOlder.rollback.lastKnownGoodVersion = cycleNewer.skill.version;
+        cycleNewer.rollback.lastKnownGoodVersion = cycleOlder.skill.version;
+        rollbackRegistry = SkillContract.validateDraftRegistry([cycleOlder, cycleNewer]);
+        if (rollbackRegistry.status !== 'rejected' || rollbackRegistry.activationAllowed !== false ||
+            rollbackRegistry.issues.length !== 2 ||
+            rollbackRegistry.issues[0].codes.indexOf('ROLLBACK_CYCLE') < 0 ||
+            rollbackRegistry.issues[1].codes.indexOf('ROLLBACK_CYCLE') < 0)
+            throw new Error(spec.name + ': rollback cycle was accepted');
         manifest.compatibility.apkVersionCode = {min:'100',max:'200'};
         manifest.compatibility.uiSignature = {profile:'fixture-v1',requiredAnchors:['menu']};
         manifest.compatibility.engine.minVersion = '6.7.0';

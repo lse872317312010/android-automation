@@ -287,6 +287,52 @@ var SkillContract = (function () {
                     issues.push({index:i,codes:['DUPLICATE_SKILL_VERSION']});
                 else identities.push(identity);
             }
+
+            // Resolve rollback references only after every draft and identity is unambiguous.
+            if (!issues.length) {
+                var edges = [];
+                for (var edgeIndex = 0; edgeIndex < manifests.length; edgeIndex++) edges.push(-1);
+                for (var current = 0; current < manifests.length; current++) {
+                    var entry = manifests[current], rollbackVersion = entry.rollback.lastKnownGoodVersion;
+                    if (rollbackVersion === null) continue;
+                    if (rollbackVersion === entry.skill.version) {
+                        issues.push({index:current,codes:['ROLLBACK_SELF_REFERENCE']});
+                        continue;
+                    }
+                    var target = -1;
+                    for (var candidate = 0; candidate < manifests.length; candidate++) {
+                        var targetSkill = manifests[candidate].skill;
+                        if (targetSkill.gameId === entry.skill.gameId &&
+                            targetSkill.id === entry.skill.id && targetSkill.version === rollbackVersion) {
+                            target = candidate;
+                            break;
+                        }
+                    }
+                    if (target < 0)
+                        issues.push({index:current,codes:['ROLLBACK_TARGET_NOT_FOUND']});
+                    else edges[current] = target;
+                }
+
+                var state = [], stack = [];
+                for (var stateIndex = 0; stateIndex < manifests.length; stateIndex++) state.push(0);
+                var visit = function (index) {
+                    if (state[index] === 2) return;
+                    if (state[index] === 1) {
+                        var cycleStart = stack.indexOf(index);
+                        for (var member = cycleStart; member < stack.length; member++)
+                            issues.push({index:stack[member],codes:['ROLLBACK_CYCLE']});
+                        return;
+                    }
+                    state[index] = 1;
+                    stack.push(index);
+                    if (edges[index] >= 0) visit(edges[index]);
+                    stack.pop();
+                    state[index] = 2;
+                };
+                for (var visitIndex = 0; visitIndex < manifests.length; visitIndex++)
+                    if (state[visitIndex] === 0) visit(visitIndex);
+                issues.sort(function (a, b) { return a.index - b.index; });
+            }
         }
         return {status:issues.length ? 'rejected' : 'valid_draft_registry',
             activationAllowed:false,count:count,issues:issues};
