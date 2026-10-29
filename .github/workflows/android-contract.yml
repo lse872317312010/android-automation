@@ -1,10 +1,10 @@
 name: Android milestone APK and emulator contracts
 on:
   pull_request:
-    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'tool/verify-milestone.py', 'tool/publish-milestone.sh', 'test/*_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   push:
     branches: ['main']
-    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'test/android_results_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
+    paths: ['android-harness/**', 'tool/test-rhino.mjs', 'tool/verify-android-results.py', 'tool/verify-milestone.py', 'tool/publish-milestone.sh', 'test/*_test.py', 'test/runtime/**', 'src/**', 'dist/**', '.github/workflows/android-contract.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -69,6 +69,11 @@ jobs:
           cp .cache/rhino/autojs6-rhino.jar android-harness/app/libs/autojs6-rhino.jar
       - name: Build instrumentation harness before booting emulator
         run: gradle -p android-harness :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+      - name: Verify APK signature with Android SDK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs \
+            android-harness/app/build/outputs/apk/debug/app-debug.apk > test-results/apk-signature.txt
+          cat test-results/apk-signature.txt
       - name: Enable hosted runner KVM access
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -104,6 +109,8 @@ jobs:
           printf '%s\n' "$MILESTONE_COMMIT" > milestone/COMMIT.txt
           printf '%s\n' 'Debug-signed milestone: manual fixture + script export. AutoJs6 runtime still required.' 'Not Redmi/game verified. Debug signing is ephemeral; later builds may require reinstall.' > milestone/README.txt
           (cd milestone && sha256sum AndroidAutomation-milestone.apk AndroidAutomation.js android-framework.json COMMIT.txt README.txt > SHA256SUMS)
+      - name: Verify packaged APK, exported script and evidence binding
+        run: python3 tool/verify-milestone.py --directory milestone --commit "$GITHUB_SHA" --source-bundle dist/AndroidAutomation.js
       - uses: actions/upload-artifact@v4
         with:
           name: AndroidAutomation-milestone-${{ github.sha }}
@@ -119,6 +126,7 @@ jobs:
             android-harness/app/build/outputs/androidTest-results
             test-results/rhino.json
             test-results/android-framework.json
+            test-results/apk-signature.txt
           if-no-files-found: warn
           retention-days: 14
 
@@ -131,6 +139,7 @@ jobs:
       contents: write
       actions: read
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: AndroidAutomation-milestone-${{ github.sha }}
@@ -139,14 +148,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: milestone-${{ github.sha }}
-        run: |
-          gh release create "$RELEASE_TAG" \
-            release-assets/AndroidAutomation-milestone.apk \
-            release-assets/AndroidAutomation.js \
-            release-assets/android-framework.json \
-            release-assets/COMMIT.txt \
-            release-assets/SHA256SUMS \
-            release-assets/README.txt \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-            --title "Android Automation milestone ${GITHUB_SHA:0:12}" \
-            --notes "CI-tested milestone APK for commit $GITHUB_SHA. Verify SHA256SUMS. Debug signature; reinstall may be required for later milestones. This is not Redmi or live-game verified."
+        run: bash tool/publish-milestone.sh release-assets dist/AndroidAutomation.js

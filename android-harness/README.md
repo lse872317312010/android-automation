@@ -93,6 +93,31 @@ PR builds still retain short-lived Actions artifacts for review; the user-facing
 installation link is the published GitHub Release. Each milestone is immutable
 and includes `SHA256SUMS`. It remains a debug-signed prerelease, not stable-signed.
 
+### Milestone byte and signature gates
+
+The framework job runs Android SDK `apksigner verify` before instrumentation.
+`tool/verify-milestone.py` checks the exact six-file inventory, SHA256SUMS,
+external checkout commit, native receipt scope/count and source script hash.
+It also reads the actual APK ZIP and requires its embedded exported script to
+match the standalone script. Duplicate ZIP entries are rejected.
+
+The release job validates the downloaded Actions artifact, uploads a draft,
+downloads its actual assets and compares them with the preupload checksum
+manifest before publishing. Interrupted drafts can resume; published assets are
+verified without replacement. A failed readback leaves a new release in draft.
+The publisher's ordering/failure tests use a fake GitHub CLI and the real byte
+validator; live GitHub publication is verified separately by main CI.
+
+Developer reproduction (Python 3.11+, matching source checkout):
+
+```sh
+python3 tool/verify-milestone.py --directory downloaded-milestone \
+  --commit <full-checkout-sha> --source-bundle dist/AndroidAutomation.js
+```
+
+This verifies package consistency. Signature validity is a separate SDK gate;
+neither establishes a stable production signing identity or hardware acceptance.
+
 ## OCR performance and ambiguity regression
 
 The OCR fixture is fullscreen and contains only task text. The full-resolution screenshot
