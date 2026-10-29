@@ -1,6 +1,6 @@
 # Android game automation roadmap — quality gates first
 
-Updated 2026-10-30. Execution repo intentionally separate from Personal OS.
+Updated 2026-10-29. Execution repo intentionally separate from Personal OS.
 Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALITY-GATES.md) · [Research](GAME-AGENT-RESEARCH.md).
 
 ## Priority and status
@@ -120,7 +120,7 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 - [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
 - [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.
 
-## Current execution queue (2026-10-30)
+## Current execution queue (2026-10-29)
 
 1. The latest APK milestone is PR #23 merge `ee5521aa0d1ae54975f521deaae77345e92a1351`.
    Its Node 20/22, Rhino, API 30 and eleven native fixture tests passed. Android

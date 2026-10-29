@@ -30,7 +30,7 @@ Absolute zero defects in arbitrary code or game/OEM versions is **not demonstrab
 | T5 | Live Star Rail bounded scenarios | Actual task entry/exit, benign input, semantically verified outcome, compatibility | Every future hot update/game server event | Required before any claim of game daily support |
 | T6 | AI candidate repair evaluation | Safe suggestion format, replay, rollback/approval controls | Safe autonomous production deployment | Planned before AI feature goes live |
 
-The merged code covers T0/T1 and a **partial T3 harness**: 30 shared script scenarios run through pinned AutoJs6 Rhino on API 30 with inert capture/OCR/Shizuku, plus real Android Bitmap/file contracts and a separate native fixture screen test. The native fixture screenshot and injected gesture do not exercise the production JavaScript adapter. Production-adapter T3, T2/T4/T5/T6 remain unverified. See the [current execution queue](ROADMAP.md#current-execution-queue-2026-10-30) and [harness scope](../android-harness/README.md). GitHub Actions is not a physical-device test.
+The merged code covers T0/T1 and a **partial T3 harness**: 30 shared script scenarios run through pinned AutoJs6 Rhino on API 30 with inert capture/OCR/Shizuku, plus real Android Bitmap/file contracts and a separate native fixture screen test. The native fixture screenshot and injected gesture do not exercise the production JavaScript adapter. Production-adapter T3, T2/T4/T5/T6 remain unverified. See the [current execution queue](ROADMAP.md#current-execution-queue-2026-10-29) and [harness scope](../android-harness/README.md). GitHub Actions is not a physical-device test.
 
 ## Implemented CI policy and remaining release controls
 
