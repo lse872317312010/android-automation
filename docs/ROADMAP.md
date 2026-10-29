@@ -1,6 +1,6 @@
 # Android game automation roadmap — quality gates first
 
-Updated 2026-10-26. Execution repo intentionally separate from Personal OS.
+Updated 2026-10-29. Execution repo intentionally separate from Personal OS.
 Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALITY-GATES.md) · [Research](GAME-AGENT-RESEARCH.md).
 
 ## Priority and status
@@ -9,7 +9,7 @@ Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALIT
 | --- | --- | --- | --- | --- |
 | **M0: CI/CD & test harness** | **P0: do first** | Node LTS test matrix, deterministic mocked device and seeded fault injection; coverage/syntax/generator consistency gates; release candidate checksum; test/evidence convention | Green mandatory GitHub Actions on exact merge SHA; reproducible artifact and checksum; no unknown unsafe tap in negative scenarios | **In progress** |
 | **M1: native Redmi smoke acceptance** | P0 after M0 | AutoJs6 6.7.0 + Shizuku permission, capture, OCR, one user-approved action, verification, safe stop, recover interrupted | Redacted report from physical Redmi and user-observed test, separate from offline CI | Not done |
-| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser, compatibility assessor and rollback-aware registry checks; no loader or executor |
+| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser, compatibility assessor and rollback-aware registry review; no loader or executor |
 | **M3: Star Rail vertical slice** | P1 | One low-risk daily-path Skill with game package+locale checks, ROI/templates/OCR, deterministic postconditions; no blind clicks | Success/failure evidence on Redmi and fixture regression across version changes | Not done |
 | **M4: AI repair and memory** | P2 | failure classifier, experience retrieval (AgentRR pattern), AI repair candidate (Mobile-Agent-E pattern), Maa-native graph proposal (MaaFwPhoneAI pattern) | Changes in 3 synthetic UI families produce non-privileged candidates, pass old/new regression + explicit review; no direct AI tap | Not done |
 | **M5: upstream & lifecycle** | P2 | Monitor StarRailCopilot / March7thAssistant task changes, extract candidate asset diffs, CI-based review, signed staged resources and rollback | Upstream change → review PR → test → signed candidate → device acceptance | Not done |
@@ -122,14 +122,14 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 ## Current execution queue (2026-10-29)
 
-1. The latest APK milestone is PR #21 merge `76a8e00dc600a4de847425fd041ff38092a8083c`.
+1. The latest APK milestone is PR #23 merge `ee5521aa0d1ae54975f521deaae77345e92a1351`.
    Its Node 20/22, Rhino, API 30 and eleven native fixture tests passed. Android
    SDK signature verification, package/source/receipt/checksum binding, draft
-   Release upload/readback and final publication passed; assets are in the
-   matching GitHub Release. This is fixture evidence, not Redmi/game acceptance.
-2. M0 release integrity gates are implemented and passed on the exact PR #21
-   merge. M0 remains open for main-branch ruleset enforcement and a disposable
-   red-PR merge-rejection check. The linked GitHub account has repository admin
+   Release upload/readback and publication passed; assets are in the matching
+   GitHub Release. This is fixture evidence, not Redmi/game acceptance.
+2. M0 release integrity gates are implemented and passed on PR #21 and #23
+   merge commits. M0 remains open for main-branch ruleset enforcement and a
+   disposable red-PR merge-rejection check. The linked GitHub account has repository admin
    permission, but the active connector exposes no branch-rule write action.
    Production MediaProjection, permission lifecycle and Shizuku input still lack
    complete native instrumentation.
@@ -138,12 +138,12 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
    Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
 4. M2 draft contracts merged in sequence: schema/parser (`d360a2d`), metadata
-   assessor (`a6ecb7b`), context diagnostics (`831d09c`) and draft registry
-   (`1705dd9`). This continuation checks `lastKnownGoodVersion` references
-   against the same game/skill history, rejects missing and self targets and
-   detects rollback cycles. This validates metadata only; it performs no
-   rollback, install, load, execution or activation. Node, Rhino and API 30 gates
-   cover the contract; passing main builds publish the test-only APK.
+   assessor (`a6ecb7b`), context diagnostics (`831d09c`), registry (`1705dd9`)
+   and rollback graph checks (`ee5521a`). This continuation assesses all draft
+   versions for one requested game/Skill against caller-supplied context. One
+   match is fixture-review-only; multiple matches block as ambiguous. It does
+   not choose, load, execute, roll back or activate Skills. Node, Rhino and API
+   30 gates cover the contract; passing main builds publish the test-only APK.
 5. Each accepted development milestone includes a commit-bound APK, script,
    SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
    debug signed; later builds may require reinstalling. It does not complete
@@ -176,6 +176,10 @@ hosted results; local results alone do not satisfy the native gate.
 - PR #21 merged at `76a8e00dc600a4de847425fd041ff38092a8083c`. Main
   quality run #40656064175 and native/release run #40656064072 passed; all
   eleven native tests passed and the matching APK/script Release is available.
+- PR #23 merged at `ee5521aa0d1ae54975f521deaae77345e92a1351`. Main
+  quality run #40908622521 and native/release run #40908622644 passed, including
+  SDK signature verification, packaged script/receipt/checksum binding, uploaded
+  byte readback and publication of the matching Release.
 - Android SDK signature verification and the package consistency gate bind the
   APK-embedded script, standalone script, source checkout, native receipt and
   checksum manifest; PR #21's exact main commit passed.

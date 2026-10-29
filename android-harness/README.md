@@ -70,7 +70,7 @@ receipt, not hardware attestation. Failed validation removes an older receipt.
 The native UI tests use a dedicated Activity with no launcher or exported entry.
 Only instrumentation starts it. Screenshots stay in memory and are recycled;
 no screenshot files, OCR text or input permissions are added to the app manifest.
-The existing 32 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, field-level context diagnostics and draft rollback graph checks use fixture values and always report zero taps.
+The existing 32 bundled-script scenarios still use inert capture/OCR/input; the Skill metadata assessor, rollback graph and registry-version compatibility checks use fixture values, block ambiguous versions and always report zero taps.
 The new UI tests use Android Instrumentation and UiAutomation directly; they
 do not execute the production JavaScript adapter. The original pixel-color tests
 read the PASS token from the native view; the six OCR-loop tests recognize it

@@ -288,3 +288,72 @@ test('draft registry rejects self-referential and cyclic rollback histories', ()
         {index:2,codes:['ROLLBACK_CYCLE']}
     ]);
 });
+
+
+test('registry compatibility assessment reports a unique review-only version', () => {
+    const older = compatibleManifest();
+    const newer = compatibleManifest();
+    newer.skill.version = '0.0.1-draft';
+    newer.rollback.lastKnownGoodVersion = older.skill.version;
+    newer.compatibility.apkVersionCode = {min:'200',max:'300'};
+    const result = SkillContract.assessDraftRegistryCompatibility(
+        [older,newer], {gameId:older.skill.gameId,skillId:older.skill.id}, compatibilityContext());
+    assert.equal(result.status, 'compatible_for_fixture_review');
+    assert.equal(result.activationAllowed, false);
+    assert.equal(result.matchCount, 1);
+    assert.deepEqual(result.assessments.map(x=>x.index), [0,1]);
+    assert.equal(result.assessments[0].status, 'compatible_for_fixture_review');
+    assert.ok(result.assessments[1].reasons.includes('APK_VERSION_OUT_OF_RANGE'));
+    assert.deepEqual(result.issues, []);
+});
+
+test('registry compatibility assessment blocks ambiguous and absent compatible versions', () => {
+    const first = compatibleManifest();
+    const second = compatibleManifest();
+    second.skill.version = '0.0.1-draft';
+    second.rollback.lastKnownGoodVersion = first.skill.version;
+    const request = {gameId:first.skill.gameId,skillId:first.skill.id};
+
+    const ambiguous = SkillContract.assessDraftRegistryCompatibility(
+        [first,second], request, compatibilityContext());
+    assert.equal(ambiguous.status, 'blocked');
+    assert.equal(ambiguous.activationAllowed, false);
+    assert.equal(ambiguous.matchCount, 2);
+    assert.deepEqual(ambiguous.issues,
+        [{index:null,codes:['AMBIGUOUS_COMPATIBLE_VERSIONS']}]);
+
+    const noMatch = SkillContract.assessDraftRegistryCompatibility(
+        [first,second], request, Object.assign(compatibilityContext(), {locale:'en-US'}));
+    assert.equal(noMatch.status, 'blocked');
+    assert.equal(noMatch.activationAllowed, false);
+    assert.equal(noMatch.matchCount, 0);
+    assert.deepEqual(noMatch.issues, [{index:null,codes:['NO_COMPATIBLE_VERSION']}]);
+    assert.ok(noMatch.assessments.every(x=>x.reasons.includes('LOCALE_MISMATCH')));
+});
+
+test('registry compatibility assessment rejects invalid requests, contexts and catalogs without echoing', () => {
+    const manifest = compatibleManifest();
+    const request = {gameId:manifest.skill.gameId,skillId:manifest.skill.id};
+    const invalidRequest = SkillContract.assessDraftRegistryCompatibility(
+        [manifest], {gameId:'PRIVATE_GAME',skillId:manifest.skill.id,secret:'PRIVATE_VALUE'},
+        compatibilityContext());
+    assert.equal(invalidRequest.status, 'blocked');
+    assert.equal(invalidRequest.activationAllowed, false);
+    assert.ok(invalidRequest.issues[0].codes.includes('REQUESTED_IDENTITY_SHAPE_FIELDS'));
+    assert.equal(JSON.stringify(invalidRequest).includes('PRIVATE'), false);
+
+    const missing = SkillContract.assessDraftRegistryCompatibility(
+        [manifest], {gameId:'other-game',skillId:manifest.skill.id}, compatibilityContext());
+    assert.ok(missing.issues[0].codes.includes('SKILL_NOT_FOUND'));
+
+    const malformedContext = Object.assign(compatibilityContext(), {token:'PRIVATE_CONTEXT'});
+    const blockedContext = SkillContract.assessDraftRegistryCompatibility([manifest], request, malformedContext);
+    assert.ok(blockedContext.issues[0].codes.includes('CONTEXT_SHAPE_FIELDS'));
+    assert.equal(JSON.stringify(blockedContext).includes('PRIVATE_CONTEXT'), false);
+
+    const invalidCatalog = SkillContract.assessDraftRegistryCompatibility(
+        [manifest,copy(manifest)],request,compatibilityContext());
+    assert.equal(invalidCatalog.status, 'rejected');
+    assert.equal(invalidCatalog.activationAllowed, false);
+    assert.ok(invalidCatalog.issues[0].codes.includes('DUPLICATE_SKILL_VERSION'));
+});

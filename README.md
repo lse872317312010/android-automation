@@ -1,6 +1,6 @@
 # Android Automation · 本地视觉执行器 0.3（星铁 APK 版本漂移保护）
 
-截至 2026-10-29：主分支 `76a8e00` 的 Node 20/22、AutoJs6 Rhino 和 API 30 共 11 项原生测试通过；模拟器夹具已实际验证截图 → 中文 ML Kit OCR → 单次触控 → 两帧 OCR 结果验证。AutoJs6 截图/OCR/Shizuku 完整适配器及 Redmi 真机仍未验收。
+截至 2026-10-29：主分支 `ee5521a` 的 Node 20/22、AutoJs6 Rhino 和 API 30 共 11 项原生测试通过；模拟器夹具已实际验证截图 → 中文 ML Kit OCR → 单次触控 → 两帧 OCR 结果验证。AutoJs6 截图/OCR/Shizuku 完整适配器及 Redmi 真机仍未验收。
 手机端运行形态仍是官方 AutoJs6 APK + 单个脚本。GitHub Release APK 是测试夹具，不是 AutoJs6 或正式自动化宿主。
 
 ## 工程路线与质量门禁（先测试，后开发）
@@ -11,7 +11,7 @@
 - [游戏 Agent 研究矩阵](docs/GAME-AGENT-RESEARCH.md) — MaaFwPhoneAI、MobiAgent/AgentRR、Mobile-Agent-E、MaaFramework、MaaEnd、BetterGI、星铁上游等。
 - [CI/CD、测试环境与质量门禁](docs/QUALITY-GATES.md) — Node LTS、随机故障注入、覆盖率、生成构建一致性、模拟器与真机的分级验收。
 - [路线图与具体完成条件](docs/ROADMAP.md) — M0–M6、各阶段退出条件、Skill/版本管理接口草案。
-- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，也可离线运行 [CLI](tool/validate-skill-manifest.cjs)。元数据兼容评估只比较调用方提供的字段；`validateCompatibilityContext` 返回稳定字段错误码且不回显输入值；`validateDraftRegistry` 检查最多 32 个草稿条目，拒绝重复身份、缺失/自引用/循环回滚目标。完整兼容匹配也只返回 fixture review 状态且 `activationAllowed: false`；这些合同不验证真机身份、不执行回滚、不安装或执行 Skill。
+- [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，也可离线运行 [CLI](tool/validate-skill-manifest.cjs)。元数据兼容评估只比较调用方提供的字段；`validateCompatibilityContext` 返回稳定字段错误码且不回显输入值；`validateDraftRegistry` 检查最多 32 个草稿条目，拒绝重复身份、缺失/自引用/循环回滚目标；`assessDraftRegistryCompatibility` 对指定 Skill 的版本历史进行只读比对，多个兼容版本会因歧义而阻断。唯一匹配也只返回 fixture review 状态且 `activationAllowed: false`；这些合同不验证真机身份、不选择、加载或执行 Skill。
 
 **“0 bug”是质量目标，不能作为未经证明的绝对保证。** 实际执行标准是零已知 P0/P1 缺陷、全量强制测试通过、失败场景零误触控和零错误完成宣称。CI 仅验证硬件接口以上的可模拟策略；真机权限、MediaProjection、OCR 和 Shizuku 的行为必须独立验收。
 

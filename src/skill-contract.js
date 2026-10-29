@@ -338,9 +338,59 @@ var SkillContract = (function () {
             activationAllowed:false,count:count,issues:issues};
     }
 
+    // Assess one requested Skill across draft versions without choosing or loading one.
+    function assessDraftRegistryCompatibility(manifests, requested, context) {
+        var registry = validateDraftRegistry(manifests);
+        if (registry.status !== 'valid_draft_registry')
+            return {status:'rejected',activationAllowed:false,matchCount:0,assessments:[],issues:registry.issues};
+
+        var identityErrors = [];
+        if (!object(requested, ['gameId', 'skillId'], 'REQUESTED_IDENTITY_SHAPE', identityErrors))
+            return {status:'blocked',activationAllowed:false,matchCount:0,assessments:[],
+                issues:[{index:null,codes:cleanCodes(identityErrors)}]};
+        requireThat(string(requested.gameId, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, 2, 64),
+            'REQUESTED_GAME_ID', identityErrors);
+        requireThat(string(requested.skillId, /^[a-z][a-z0-9]*(?:\.[a-z0-9]+(?:[_-][a-z0-9]+)*)+$/, 3, 96),
+            'REQUESTED_SKILL_ID', identityErrors);
+        identityErrors = cleanCodes(identityErrors);
+        if (identityErrors.length)
+            return {status:'blocked',activationAllowed:false,matchCount:0,assessments:[],
+                issues:[{index:null,codes:identityErrors}]};
+
+        var contextErrors = validateCompatibilityContext(context);
+        if (contextErrors.length)
+            return {status:'blocked',activationAllowed:false,matchCount:0,assessments:[],
+                issues:[{index:null,codes:contextErrors}]};
+
+        var targetIndexes = [];
+        for (var i = 0; i < manifests.length; i++)
+            if (manifests[i].skill.gameId === requested.gameId &&
+                manifests[i].skill.id === requested.skillId) targetIndexes.push(i);
+        if (!targetIndexes.length)
+            return {status:'blocked',activationAllowed:false,matchCount:0,assessments:[],
+                issues:[{index:null,codes:['SKILL_NOT_FOUND']}]};
+
+        var assessments = [], matchCount = 0;
+        for (var targetIndex = 0; targetIndex < targetIndexes.length; targetIndex++) {
+            var index = targetIndexes[targetIndex];
+            var result = evaluateCompatibility(manifests[index], context);
+            assessments.push({index:index,status:result.status,reasons:result.reasons});
+            if (result.status === 'compatible_for_fixture_review') matchCount++;
+        }
+        if (matchCount === 1)
+            return {status:'compatible_for_fixture_review',activationAllowed:false,
+                matchCount:matchCount,assessments:assessments,issues:[]};
+        if (matchCount > 1)
+            return {status:'blocked',activationAllowed:false,matchCount:matchCount,
+                assessments:assessments,issues:[{index:null,codes:['AMBIGUOUS_COMPATIBLE_VERSIONS']}]};
+        return {status:'blocked',activationAllowed:false,matchCount:0,assessments:assessments,
+            issues:[{index:null,codes:['NO_COMPATIBLE_VERSION']}]};
+    }
+
     return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft,
         validateCompatibilityContext:validateCompatibilityContext,
-        evaluateCompatibility:evaluateCompatibility, validateDraftRegistry:validateDraftRegistry};
+        evaluateCompatibility:evaluateCompatibility, validateDraftRegistry:validateDraftRegistry,
+        assessDraftRegistryCompatibility:assessDraftRegistryCompatibility};
 })();
 if (typeof module !== 'undefined' && module.exports) {
     if (typeof VisualLoop !== 'undefined') module.exports.SkillContract = SkillContract;
