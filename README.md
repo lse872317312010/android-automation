@@ -1,7 +1,6 @@
 # Android Automation · 本地视觉执行器 0.3（星铁 APK 版本漂移保护）
 
-截至 2026-10-29：主分支 `ee5521a` 的 Node 20/22、AutoJs6 Rhino 和 API 30 共 11 项原生测试通过；模拟器夹具已实际验证截图 → 中文 ML Kit OCR → 单次触控 → 两帧 OCR 结果验证。AutoJs6 截图/OCR/Shizuku 完整适配器及 Redmi 真机仍未验收。
-手机端运行形态仍是官方 AutoJs6 APK + 单个脚本。GitHub Release APK 是测试夹具，不是 AutoJs6 或正式自动化宿主。
+主线每个里程碑 Release 都绑定 debug APK、独立 JS、Android framework receipt 和 SHA256SUMS，并通过 Node 20/22、AutoJs6 Rhino、Android API 30 检查。Release APK 是测试夹具，不是 AutoJs6 宿主；请在官方 AutoJs6 中导入对应 JS。Redmi 真机和实游戏尚未验收。
 
 ## 工程路线与质量门禁（先测试，后开发）
 

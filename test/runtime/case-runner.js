@@ -90,6 +90,27 @@ function runRuntimeCase(spec) {
         if (registryAssessment.status !== 'blocked' || registryAssessment.activationAllowed !== false ||
             registryAssessment.issues[0].codes.indexOf('AMBIGUOUS_COMPATIBLE_VERSIONS') < 0)
             throw new Error(spec.name + ': ambiguous versions were selected');
+        var rollbackAssessment = SkillContract.assessDraftRollbackCompatibility(
+            [manifest,compatibleSecond],
+            {gameId:'fixture-game',skillId:'fixture.safe_test',failingVersion:compatibleSecond.skill.version},
+            context);
+        if (rollbackAssessment.status !== 'compatible_for_fixture_review' ||
+            rollbackAssessment.activationAllowed !== false || rollbackAssessment.failingIndex !== 1 ||
+            rollbackAssessment.rollbackIndex !== 0)
+            throw new Error(spec.name + ': compatible rollback target was not review-only');
+        var incompatibleTarget = JSON.parse(JSON.stringify(manifest));
+        incompatibleTarget.skill.version = '0.0.2-draft';
+        incompatibleTarget.compatibility.packages = ['com.example.other'];
+        var incompatibleFailing = JSON.parse(JSON.stringify(compatibleSecond));
+        incompatibleFailing.skill.version = '0.0.3-draft';
+        incompatibleFailing.rollback.lastKnownGoodVersion = incompatibleTarget.skill.version;
+        rollbackAssessment = SkillContract.assessDraftRollbackCompatibility(
+            [incompatibleTarget,incompatibleFailing],
+            {gameId:'fixture-game',skillId:'fixture.safe_test',failingVersion:incompatibleFailing.skill.version},
+            context);
+        if (rollbackAssessment.status !== 'blocked' || rollbackAssessment.activationAllowed !== false ||
+            rollbackAssessment.targetCompatibility.reasons.indexOf('PACKAGE_MISMATCH') < 0)
+            throw new Error(spec.name + ': incompatible rollback target was permitted');
         context.engine.version = '6.6.9';
         assessment = SkillContract.evaluateCompatibility(manifest, context);
         if (assessment.status !== 'blocked' || assessment.activationAllowed !== false ||

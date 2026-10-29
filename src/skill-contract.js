@@ -387,10 +387,84 @@ var SkillContract = (function () {
             issues:[{index:null,codes:['NO_COMPATIBLE_VERSION']}]};
     }
 
+    // Review-only: verify a draft Skill's declared rollback target against caller context.
+    // This reports compatibility only; it never changes registry state or activates the target.
+    function assessDraftRollbackCompatibility(manifests, requested, context) {
+        var registry = validateDraftRegistry(manifests);
+        if (registry.status !== 'valid_draft_registry')
+            return {status:'rejected',activationAllowed:false,failingIndex:null,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,issues:registry.issues};
+
+        var requestErrors = [];
+        if (!object(requested, ['gameId', 'skillId', 'failingVersion'],
+            'ROLLBACK_REQUEST_SHAPE', requestErrors))
+            return {status:'blocked',activationAllowed:false,failingIndex:null,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,
+                issues:[{index:null,codes:cleanCodes(requestErrors)}]};
+        requireThat(string(requested.gameId, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, 2, 64),
+            'ROLLBACK_REQUEST_GAME_ID', requestErrors);
+        requireThat(string(requested.skillId, /^[a-z][a-z0-9]*(?:\.[a-z0-9]+(?:[_-][a-z0-9]+)*)+$/, 3, 96),
+            'ROLLBACK_REQUEST_SKILL_ID', requestErrors);
+        requireThat(string(requested.failingVersion, /^\d+\.\d+\.\d+-draft$/, 9, 32),
+            'ROLLBACK_REQUEST_FAILING_VERSION', requestErrors);
+        requestErrors = cleanCodes(requestErrors);
+        if (requestErrors.length)
+            return {status:'blocked',activationAllowed:false,failingIndex:null,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,issues:[{index:null,codes:requestErrors}]};
+
+        var contextErrors = validateCompatibilityContext(context);
+        if (contextErrors.length)
+            return {status:'blocked',activationAllowed:false,failingIndex:null,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,issues:[{index:null,codes:contextErrors}]};
+
+        var failingIndex = -1;
+        for (var i = 0; i < manifests.length; i++) {
+            var skill = manifests[i].skill;
+            if (skill.gameId === requested.gameId && skill.id === requested.skillId &&
+                skill.version === requested.failingVersion) {
+                failingIndex = i;
+                break;
+            }
+        }
+        if (failingIndex < 0)
+            return {status:'blocked',activationAllowed:false,failingIndex:null,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,
+                issues:[{index:null,codes:['SKILL_VERSION_NOT_FOUND']}]};
+
+        var targetVersion = manifests[failingIndex].rollback.lastKnownGoodVersion;
+        if (targetVersion === null)
+            return {status:'blocked',activationAllowed:false,failingIndex:failingIndex,rollbackIndex:null,
+                targetVersion:null,targetCompatibility:null,
+                issues:[{index:failingIndex,codes:['ROLLBACK_TARGET_NOT_CONFIGURED']}]};
+
+        var rollbackIndex = -1;
+        for (var target = 0; target < manifests.length; target++) {
+            var targetSkill = manifests[target].skill;
+            if (targetSkill.gameId === requested.gameId && targetSkill.id === requested.skillId &&
+                targetSkill.version === targetVersion) {
+                rollbackIndex = target;
+                break;
+            }
+        }
+        if (rollbackIndex < 0)
+            return {status:'rejected',activationAllowed:false,failingIndex:failingIndex,rollbackIndex:null,
+                targetVersion:targetVersion,targetCompatibility:null,
+                issues:[{index:failingIndex,codes:['ROLLBACK_TARGET_NOT_FOUND']}]};
+
+        var assessment = evaluateCompatibility(manifests[rollbackIndex], context);
+        var compatible = assessment.status === 'compatible_for_fixture_review';
+        return {status:compatible ? 'compatible_for_fixture_review' : 'blocked',
+            activationAllowed:false,failingIndex:failingIndex,rollbackIndex:rollbackIndex,
+            targetVersion:targetVersion,
+            targetCompatibility:{status:assessment.status,reasons:assessment.reasons},
+            issues:compatible ? [] : [{index:rollbackIndex,codes:['ROLLBACK_TARGET_INCOMPATIBLE']}]};
+    }
+
     return {schemaId:SCHEMA_ID, validateDraft:validateDraft, parseDraft:parseDraft,
         validateCompatibilityContext:validateCompatibilityContext,
         evaluateCompatibility:evaluateCompatibility, validateDraftRegistry:validateDraftRegistry,
-        assessDraftRegistryCompatibility:assessDraftRegistryCompatibility};
+        assessDraftRegistryCompatibility:assessDraftRegistryCompatibility,
+        assessDraftRollbackCompatibility:assessDraftRollbackCompatibility};
 })();
 if (typeof module !== 'undefined' && module.exports) {
     if (typeof VisualLoop !== 'undefined') module.exports.SkillContract = SkillContract;

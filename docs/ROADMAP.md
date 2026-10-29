@@ -122,32 +122,31 @@ Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energ
 
 ## Current execution queue (2026-10-29)
 
-1. The latest APK milestone is PR #23 merge `ee5521aa0d1ae54975f521deaae77345e92a1351`.
-   Its Node 20/22, Rhino, API 30 and eleven native fixture tests passed. Android
-   SDK signature verification, package/source/receipt/checksum binding, draft
-   Release upload/readback and publication passed; assets are in the matching
-   GitHub Release. This is fixture evidence, not Redmi/game acceptance.
-2. M0 release integrity gates are implemented and passed on PR #21 and #23
-   merge commits. M0 remains open for main-branch ruleset enforcement and a
-   disposable red-PR merge-rejection check. The linked GitHub account has repository admin
-   permission, but the active connector exposes no branch-rule write action.
-   Production MediaProjection, permission lifecycle and Shizuku input still lack
-   complete native instrumentation.
+1. Baseline APK milestone before this continuation: PR #24 merge
+   `1b46ef62502f55fb9993799a5e298ee3a97bf815`. Main quality run #40916707570
+   and Android framework/release run #40916707209 passed. [The matching Release](https://github.com/lse872317312010/android-automation/releases/tag/milestone-1b46ef62502f55fb9993799a5e298ee3a97bf815)
+   contains the commit-bound APK, script, framework receipt and SHA256SUMS.
+   This is fixture evidence, not Redmi/game acceptance.
+2. M0 release-integrity gates passed on PR #21, #23 and #24 main commits. M0
+   remains open for main-branch ruleset enforcement and a disposable red-PR
+   merge-rejection check. The connected GitHub app exposes no ruleset-write action. Production MediaProjection, permission
+   lifecycle and Shizuku input still lack complete native instrumentation.
 3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
    in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
    Keep live-game input, Skill activation and signed production promotion
    disabled until their own evidence is reviewed.
 4. M2 draft contracts merged in sequence: schema/parser (`d360a2d`), metadata
-   assessor (`a6ecb7b`), context diagnostics (`831d09c`), registry (`1705dd9`)
-   and rollback graph checks (`ee5521a`). This continuation assesses all draft
-   versions for one requested game/Skill against caller-supplied context. One
-   match is fixture-review-only; multiple matches block as ambiguous. It does
-   not choose, load, execute, roll back or activate Skills. Node, Rhino and API
-   30 gates cover the contract; passing main builds publish the test-only APK.
+   assessor (`a6ecb7b`), context diagnostics (`831d09c`), registry
+   (`1705dd9`), rollback graph checks (`ee5521a`) and registry-version
+   compatibility review (`1b46ef6`). This continuation checks the declared
+   last-known-good target against caller-supplied game, Skill and device context.
+   It remains review-only: no Skill is chosen, loaded, executed, rolled back or
+   activated. Signature/trust design and any executor remain separate gates.
 5. Each accepted development milestone includes a commit-bound APK, script,
-   SHA256SUMS and validation scope in GitHub Releases. The APK is temporary
-   debug signed; later builds may require reinstalling. It does not complete
-   M0/M1 or imply Redmi/game acceptance.
+   SHA256SUMS and validation scope in GitHub Releases. APKs are temporary
+   debug-signed test harnesses; later builds may require reinstalling and official
+   AutoJs6 is still required to run the exported JS. They do not imply Redmi or
+   live-game acceptance.
 
 ## Real OCR continuation (2026-10-28)
 
@@ -176,6 +175,10 @@ hosted results; local results alone do not satisfy the native gate.
 - PR #21 merged at `76a8e00dc600a4de847425fd041ff38092a8083c`. Main
   quality run #40656064175 and native/release run #40656064072 passed; all
   eleven native tests passed and the matching APK/script Release is available.
+- PR #24 merged at `1b46ef62502f55fb9993799a5e298ee3a97bf815`. Main
+  quality run #40916707570 and Android framework/release run #40916707209
+  passed. Release upload/readback succeeded; the matching commit-bound APK,
+  script, framework receipt and checksums are published.
 - PR #23 merged at `ee5521aa0d1ae54975f521deaae77345e92a1351`. Main
   quality run #40908622521 and native/release run #40908622644 passed, including
   SDK signature verification, packaged script/receipt/checksum binding, uploaded
