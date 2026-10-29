@@ -357,3 +357,71 @@ test('registry compatibility assessment rejects invalid requests, contexts and c
     assert.equal(invalidCatalog.activationAllowed, false);
     assert.ok(invalidCatalog.issues[0].codes.includes('DUPLICATE_SKILL_VERSION'));
 });
+
+test('rollback compatibility assessment reviews the registered target without activating it', () => {
+    const knownGood = compatibleManifest();
+    knownGood.skill.version = '0.1.0-draft';
+    const failing = compatibleManifest();
+    failing.skill.version = '0.2.0-draft';
+    failing.rollback.lastKnownGoodVersion = knownGood.skill.version;
+    const result = SkillContract.assessDraftRollbackCompatibility(
+        [knownGood,failing],
+        {gameId:failing.skill.gameId,skillId:failing.skill.id,failingVersion:failing.skill.version},
+        compatibilityContext());
+
+    assert.equal(result.status, 'compatible_for_fixture_review');
+    assert.equal(result.activationAllowed, false);
+    assert.equal(result.failingIndex, 1);
+    assert.equal(result.rollbackIndex, 0);
+    assert.equal(result.targetVersion, knownGood.skill.version);
+    assert.equal(result.targetCompatibility.status, 'compatible_for_fixture_review');
+    assert.ok(result.targetCompatibility.reasons.includes('DEVICE_VALIDATION_REQUIRED'));
+    assert.deepEqual(result.issues, []);
+    assert.equal(Object.prototype.hasOwnProperty.call(result, 'manifest'), false);
+});
+
+test('rollback compatibility blocks a declared target that mismatches the caller context', () => {
+    const knownGood = compatibleManifest();
+    knownGood.skill.version = '0.1.0-draft';
+    knownGood.compatibility.packages = ['com.example.othergame'];
+    const failing = compatibleManifest();
+    failing.skill.version = '0.2.0-draft';
+    failing.rollback.lastKnownGoodVersion = knownGood.skill.version;
+    const result = SkillContract.assessDraftRollbackCompatibility(
+        [knownGood,failing],
+        {gameId:failing.skill.gameId,skillId:failing.skill.id,failingVersion:failing.skill.version},
+        compatibilityContext());
+
+    assert.equal(result.status, 'blocked');
+    assert.equal(result.activationAllowed, false);
+    assert.equal(result.rollbackIndex, 0);
+    assert.equal(result.targetCompatibility.status, 'blocked');
+    assert.ok(result.targetCompatibility.reasons.includes('PACKAGE_MISMATCH'));
+    assert.deepEqual(result.issues, [{index:0,codes:['ROLLBACK_TARGET_INCOMPATIBLE']}]);
+});
+
+test('rollback compatibility blocks missing targets and malformed private input', () => {
+    const manifest = compatibleManifest();
+    const request = {gameId:manifest.skill.gameId,skillId:manifest.skill.id,failingVersion:manifest.skill.version};
+    const unconfigured = SkillContract.assessDraftRollbackCompatibility([manifest],request,compatibilityContext());
+    assert.equal(unconfigured.status, 'blocked');
+    assert.equal(unconfigured.activationAllowed, false);
+    assert.ok(unconfigured.issues[0].codes.includes('ROLLBACK_TARGET_NOT_CONFIGURED'));
+
+    const missing = SkillContract.assessDraftRollbackCompatibility([manifest],
+        {gameId:manifest.skill.gameId,skillId:manifest.skill.id,failingVersion:'9.9.9-draft'},
+        compatibilityContext());
+    assert.ok(missing.issues[0].codes.includes('SKILL_VERSION_NOT_FOUND'));
+
+    const malformedRequest = SkillContract.assessDraftRollbackCompatibility([manifest],
+        {gameId:manifest.skill.gameId,skillId:manifest.skill.id,failingVersion:manifest.skill.version,secret:'PRIVATE_REQUEST'},
+        compatibilityContext());
+    assert.equal(malformedRequest.status, 'blocked');
+    assert.ok(malformedRequest.issues[0].codes.includes('ROLLBACK_REQUEST_SHAPE_FIELDS'));
+    assert.equal(JSON.stringify(malformedRequest).includes('PRIVATE_REQUEST'), false);
+
+    const malformedContext = Object.assign(compatibilityContext(), {token:'PRIVATE_CONTEXT'});
+    const blockedContext = SkillContract.assessDraftRollbackCompatibility([manifest],request,malformedContext);
+    assert.ok(blockedContext.issues[0].codes.includes('CONTEXT_SHAPE_FIELDS'));
+    assert.equal(JSON.stringify(blockedContext).includes('PRIVATE_CONTEXT'), false);
+});
