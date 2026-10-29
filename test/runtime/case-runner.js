@@ -77,6 +77,19 @@ function runRuntimeCase(spec) {
         var assessment = SkillContract.evaluateCompatibility(manifest, context);
         if (assessment.status !== 'compatible_for_fixture_review' || assessment.activationAllowed !== false)
             throw new Error(spec.name + ': metadata match activated or failed');
+        var registryAssessment = SkillContract.assessDraftRegistryCompatibility([manifest, second],
+            {gameId:'fixture-game',skillId:'fixture.safe_test'}, context);
+        if (registryAssessment.status !== 'compatible_for_fixture_review' ||
+            registryAssessment.activationAllowed !== false || registryAssessment.matchCount !== 1)
+            throw new Error(spec.name + ': unique draft version was not review-only');
+        var compatibleSecond = JSON.parse(JSON.stringify(manifest));
+        compatibleSecond.skill.version = '0.0.1-draft';
+        compatibleSecond.rollback.lastKnownGoodVersion = manifest.skill.version;
+        registryAssessment = SkillContract.assessDraftRegistryCompatibility([manifest, compatibleSecond],
+            {gameId:'fixture-game',skillId:'fixture.safe_test'}, context);
+        if (registryAssessment.status !== 'blocked' || registryAssessment.activationAllowed !== false ||
+            registryAssessment.issues[0].codes.indexOf('AMBIGUOUS_COMPATIBLE_VERSIONS') < 0)
+            throw new Error(spec.name + ': ambiguous versions were selected');
         context.engine.version = '6.6.9';
         assessment = SkillContract.evaluateCompatibility(manifest, context);
         if (assessment.status !== 'blocked' || assessment.activationAllowed !== false ||
