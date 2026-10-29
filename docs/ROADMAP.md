@@ -170,3 +170,18 @@ new regression fails on the preceding implementation; it is shared across Node,
 Rhino and the Android script matrix. A targeted mutation restores the unsafe
 filter to check regression sensitivity. See PR #21 and issue #5 for exact-commit
 hosted results; local results alone do not satisfy the native gate.
+
+## Milestone delivery validation (2026-10-29)
+
+- PR #21 merged at `76a8e00dc600a4de847425fd041ff38092a8083c`. Main
+  quality run #40656064175 and native/release run #40656064072 passed; all
+  eleven native tests passed and the matching APK/script Release is available.
+- Add Android SDK signature verification and a package consistency gate binding
+  APK-embedded script, standalone script, source checkout, native receipt and
+  complete checksum manifest. The preceding real Release passes the consistency
+  validator; new gates require their own exact-commit hosted evidence.
+- Stage new releases as drafts, download and verify uploaded bytes against the
+  build manifest, then publish. Test failed readback, interrupted draft recovery
+  and published-release immutability offline with a fake CLI and real validator.
+- Main branch-rule enforcement, production adapter/permission lifecycle, physical
+  Redmi, live-game acceptance and stable signed promotion remain separate work.
