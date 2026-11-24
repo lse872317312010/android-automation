@@ -102,10 +102,4 @@ Suggested product SLOs, **targets not measured results**:
 
 ## Milestone ordering decision
 
-**M0 (NOW): build/test/release infrastructure + deterministic fault-injection simulator + versioned fixture datasets; CI must be green before code merges.**
-M1: Redmi evidence for capture→OCR→one explicit action→semantic verification, with safe stop and failure injection.
-M2: manifest, compatibility/Skill Registry, data-first hot-swappable resource bundles, rollback and protocol.
-M3: AI repair proposal/experience memory + isolated regression, zero-token stable replay.
-M4: upstream change ingestion, device validation farm, controlled release and monitoring.
-
-For exact gates, deliverables, status boundaries and ownership: see [QUALITY-GATES.md](QUALITY-GATES.md) and [ROADMAP.md](ROADMAP.md).
+Updated 2026-11-24: retain mandatory CI and deterministic verification, then prioritize a single phone entry, emulator tests with the actual host, Redmi acceptance and one explicitly selected Star Rail settings action. This action can use the existing bundled workflow; a generic Skill executor is not a prerequisite. Signed Skill updates, AI repair and scheduling remain design directions. The [roadmap](ROADMAP.md#交付顺序) owns the delivery order and [quality gates](QUALITY-GATES.md) define the evidence required.

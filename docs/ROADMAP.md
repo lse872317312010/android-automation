@@ -1,195 +1,41 @@
-# Android game automation roadmap — quality gates first
+# Android 自动化路线图：先交付手机上能用的闭环
 
-Updated 2026-10-29. Execution repo intentionally separate from Personal OS.
-Source of truth: [ADR-0001](ADR-0001-reliable-game-agent.md) · [Quality](QUALITY-GATES.md) · [Research](GAME-AGENT-RESEARCH.md).
+更新：2026-11-24。执行器保留在本仓库；不依赖 Personal OS、PC 或云端服务即可在手机上运行。首个目标设备是 Redmi，唯一用于游戏验收的应用是《崩坏：星穹铁道》。
 
-## Priority and status
+**下一次体验目标：** 装好官方 AutoJs6 并按需授权 Shizuku 后，从项目图标点「开始本机自测」，确认系统截屏提示，等待它识别随机按钮、点击一次并读回结果。用户不需要找 JS 文件、手点目标或凭画面变化判断成功。**这是交付目标；现有 APK 仍是手动测试页和脚本导出工具。**
 
-| Phase | Priority | Engineering goal | Exit evidence | Status |
-| --- | --- | --- | --- | --- |
-| **M0: CI/CD & test harness** | **P0: do first** | Node LTS test matrix, deterministic mocked device and seeded fault injection; coverage/syntax/generator consistency gates; release candidate checksum; test/evidence convention | Green mandatory GitHub Actions on exact merge SHA; reproducible artifact and checksum; no unknown unsafe tap in negative scenarios | **In progress** |
-| **M1: native Redmi smoke acceptance** | P0 after M0 | AutoJs6 6.7.0 + Shizuku permission, capture, OCR, one user-approved action, verification, safe stop, recover interrupted | Redacted report from physical Redmi and user-observed test, separate from offline CI | Not done |
-| **M2: Skill Runtime / isolation** | P1 | Data-first Skill manifest, JSON schema, parser, capability-gated executor, compatibility registry, screenshots/visual signature, scoped error and rollback | Install two fixture Skills; reject unsigned/malformed/incompatible; safe rollback, no cross-game impact | Draft schema/parser, compatibility assessor and rollback-aware registry review; no loader or executor |
-| **M3: Star Rail vertical slice** | P1 | One low-risk daily-path Skill with game package+locale checks, ROI/templates/OCR, deterministic postconditions; no blind clicks | Success/failure evidence on Redmi and fixture regression across version changes | Not done |
-| **M4: AI repair and memory** | P2 | failure classifier, experience retrieval (AgentRR pattern), AI repair candidate (Mobile-Agent-E pattern), Maa-native graph proposal (MaaFwPhoneAI pattern) | Changes in 3 synthetic UI families produce non-privileged candidates, pass old/new regression + explicit review; no direct AI tap | Not done |
-| **M5: upstream & lifecycle** | P2 | Monitor StarRailCopilot / March7thAssistant task changes, extract candidate asset diffs, CI-based review, signed staged resources and rollback | Upstream change → review PR → test → signed candidate → device acceptance | Not done |
-| **M6: 10-game scheduler/energy** | P3 | Sequential task queue, per-game time/energy budgets, doze/screen strategy, throttling, logs; Oracle optional planner | Per-game isolation, measured Wh/day and retry budgets on phone | Not done |
+## 目前有哪些证据
 
-## M0 concrete backlog / test work
+| 已核对的版本或记录 | 能证明什么 | 还不能证明什么 |
+| --- | --- | --- |
+| 运行代码基线 [`d2f6210`](https://github.com/lse872317312010/android-automation/commit/d2f62105af5d067cdbc962d2c37b969cd05f119e)；[质量 CI](https://github.com/lse872317312010/android-automation/actions/runs/40922844129) | Node 套件 110 项通过；固定版本 Rhino 的 32 个场景通过。PR #23–#25 校验草稿版本与回滚目标。 | 草稿不能安装、执行或真的回滚；策略测试不验证手机权限。 |
+| [API 30 模拟器与发布记录](https://github.com/lse872317312010/android-automation/actions/runs/40922844133)；[对应的调试 Release](https://github.com/lse872317312010/android-automation/releases/tag/milestone-d2f62105af5d067cdbc962d2c37b969cd05f119e) | 11 项原生测试通过。测试页用模拟器真实像素、离线 ML Kit、测试框架触控及两帧结果验证；发布包、脚本和测试凭据已核对。 | 自动截图和触控来自测试框架。尚未验证正式 AutoJs6 的 MediaProjection 和 Shizuku 整条路径，也没有 Redmi 或星铁实测记录。 |
+| [11 月 23 日周度指标](https://github.com/lse872317312010/android-automation/actions/runs/45110575432) | 在同一代码基线上生成了指标。 | 这次周报没有增加设备覆盖或发布新的自动化能力。 |
 
-Initial branch gate result (2026-10-22): **28/28 Node tests passed**, plus 512 unsafe-input scenarios, 128 valid deterministic flows and 128 read-only OCR variations. Pure `src/core.js` V8 coverage: **100% lines, 90.10% branches, 100% functions**; excludes Android host and game engine. Node 20/22 workflow matrix green. Results will be rechecked after the merge.
+## 交付顺序
 
-- [x] Create ADR and research references
-- [x] Adopt zero-known-P0/P1 release policy (not unprovable absolute zero bugs)
-- [x] Harden GitHub Actions to run all tests on Node 20/22, validate bundles, require coverage (100% lines/functions and >=90% branches for src/core.js)
-- [x] Build reproducible seeded negative/positive scenario tests and fault injection (512 negative + 128 valid + 128 read-only variants)
-- [x] Configure tag-driven **candidate only** CD with SHA256 and generated release notes (workflow committed; actual tag-triggered release not yet exercised)
-- [x] Verify Node 20/22 CI on merged main `88212103efa994ebe07a2d0fed218adbd4e08541`, run #39732916633 (37 tests). Later changes require their own exact-head checks.
-- [ ] Require passing checks in a GitHub main-branch ruleset (admin setting not available in current connector; see QUALITY-GATES.md)
-- [x] Define a pending real-device template and offline validator; synthetic/pending records, artifact mismatches and unsafe outcomes are rejected. A valid operator assertion is only `ready_for_review`; no hardware evidence is supplied by this change.
-- [x] Add Android framework-contract emulator harness (PR #8 merged; Rect/Bitmap/rename and pinned Rhino contracts only)
-- [ ] Complete native UI and production capture/permission/input adapter acceptance (framework contracts alone do not complete T3)
-- [ ] Validate hardware permissions and actual game input on Redmi (M1, never simulated by CI)
+| 顺序 | 交付物 | 通过条件 |
+| --- | --- | --- |
+| **1 · 一个手机入口**（无需真机即可开发） | 体验 APK 的首要按钮改为「开始本机自测」。优先让已安装的官方 AutoJs6 6.7.0 运行 APK 内随版本发布的脚本；脚本导出保留作备用。 | 在干净模拟器上，安装两个已知版本的 APK 后，从桌面进入自测，全程不选文件。用实际发布脚本打开自测界面；缺少或不支持的宿主给出具体下一步，不进入游戏，不报告自测成功。 |
+| **2 · 用实际手机软件跑 CI**（与 1 并行搭环境） | 保留现有 API 30 快速回归；在模拟器安装官方 AutoJs6 和 Shizuku，从同一入口运行实际脚本，补测 API 30 和 API 34 的截屏及权限生命周期。 | 授权时：从实际截图识别随机 TEST 编号，通过 Shizuku 发出一次触控，测试页收到一次，两张后续截图读到同号 PASS。拒绝或在提交前撤权、切走、旋转、停止：无实际触控；触控已发出但结果未变：不重试、不报成功。冷启动不续点。按 API 和适配器分别保存结果，缺依赖或只跑了替身的组合不能标绿。 |
+| **3 · Redmi 验收**（首次必须用手机） | 给用户一个固定版本的候选包、一个入口和一份可复制的脱敏报告。先测本机测试页，再做星铁只读。 | 逐项完成[已有 8 个场景及记录格式](../evidence/README.md)，绑定实际版本和脚本散列：自测、拒绝截屏、拒绝 Shizuku、前台切换、旋转、停止、冷启动、星铁只读。只读必须是 `observed` 且 `actionCount=0`。跟踪实际收到的点击，不把“请求了一次”当成成功。 |
+| **4 · 星铁只验证一个动作** | 第一个游戏任务：从**已打开的手机菜单**识别唯一「设置」并进入设置页。沿用现有单步实验，先以同版本只读观察和截图库验证入口及结果。 | 阶段 3 通过；用户单独选择游戏单步。限定包名、版本、语言；两帧确认入口稳定，最多一点；两帧都有至少两类设置页特征才算成功。入口仅图标、重复、改版或结果不明就停止。它通过后才挑第一个日常候选，例如只读汇总每日实训进度，另行验收。 |
 
-Checklist intentionally records a plan; completion of a doc file alone does not mark code/tests complete. Update statuses based on merged CI and physical evidence.
+**现在可以并行做的事：** 开发单入口、搭实际宿主模拟器、构造识别回放集，无需等 Redmi。回放集先放合成的中文菜单、重复「设置」、非设置页含「声音」等正负例；若能取得可用的真实游戏样本，另做本地脱敏标注，分开报告命中数/样本数、误触发及漏识。没有真实样本就保留“实际游戏识别率未知”，不把私人截图或 OCR 原文放进 CI。分支保护及故意失败的 PR 能否被 GitHub 拒绝由 [#5](https://github.com/lse872317312010/android-automation/issues/5) 单独跟踪，可与以上工作并行。
 
-## Planned runtime interfaces (the draft validator does not implement runtime loading)
+## 下一个开发 PR 做什么
 
-```ts
-type SkillIdentity = {
-  gameId: string;
-  skillId: string;
-  skillVersion: string;
-  uiProfile: string;
-};
+1. 以官方 [6.7.0 Release](https://github.com/SuperMonster003/AutoJs6/releases/tag/v6.7.0) 的 x86_64 构建做模拟器测试，固定下载散列；保留 ARM64 为 Redmi 候选。上游这个版本的[运行入口](https://github.com/SuperMonster003/AutoJs6/blob/v6.7.0/app/src/main/java/org/autojs/autojs/external/open/RunIntentActivity.java)能读取只读内容 URI。先在干净安装上验证它能打开本项目 UI，不用手工导入。这个源码事实不等于联调已经通过。
+2. 首页按钮只交付随包的受检脚本给指定的官方宿主，只授予读取该文件的临时权限。入口不接受外部脚本、任意 URI 或游戏指令。第一版可在 AutoJs6 自测会话里显示与复制结果，无须先做跨应用后台回传。
+3. PR 验收同时演示「宿主缺失 → 提示安装」「宿主就绪 → 正确自测界面」「未授权 → 无输入且有原因」。单纯拉起应用不能算闭环成功。若宿主入口不兼容，保留现有导出路径并记录阻塞；继续模拟器权限测试和离线回放，不同时维护第二套 OCR/触控引擎。
 
-type Compatibility = {
-  packageAllowlist: string[];
-  apkVersionCodeRange?: [string, string];
-  uiAnchors: string[];
-  deviceCapabilities: string[];
-  locale: string;
-  engineAbi: string;
-};
+正式截图路径采用系统授权。[Android 14 行为说明](https://developer.android.com/about/versions/14/behavior-changes-14)要求目标 API 34 及以上的应用为每次新的 MediaProjection 会话取得同意。产品目标是**在用户授权的会话内自动执行**；流程应解释系统提示，撤权后停止。分别记录系统版本以及实际宿主的 target SDK，不把一个系统组合的结果外推给其他组合。
 
-type RepairProposal = {
-  failingSkillVersion: string;
-  failureEvidenceId: string; // sanitized
-  changedComponents: string[];
-  candidateManifestHash: string;
-  rationale: string;
-  regressionCases: string[];
-  status: "pending_review";
-};
+## 验收之后才扩展
 
-type ExecutionEvidence = {
-  runId: string;
-  actionRequested: number;
-  postconditionVerified: boolean;
-  completed: boolean;
-  deviceValidation: "not_established" | "fixture_observed_only" | "read_only_observed_only" | "device_verified";
-};
-```
+- **M0/M1**：持续执行[原质量门槛](QUALITY-GATES.md)；模拟器、Redmi、实际游戏分别记账。候选包绑定源码、脚本和校验和；稳定签名、可升级安装和回滚仍是正式发布前的独立条件。
+- **M3 首个游戏动作排在通用 M2 执行器之前。** 继续复用 AutoJs6、Shizuku、ML Kit 和现有 `src/core.js`。若真实界面只有图标，先做小规模模板回放，再决定是否引入 MaaFramework/MaaFwApp；StarRailCopilot 供对照任务步骤，不移植整套 Python 运行时。
+- **M2/M4–M6**：有第二个可验证任务需要共享能力时，再提取 Skill 加载/隔离与签名回滚。AI 修复、上游自动同步、多游戏调度和能耗优化随后评估；都不占首个手机闭环的开发顺序。
+- **Personal OS**：未来可引用有版本的运行报告（现有 `android-automation.run.v1`）或提交受限任务；当前不引入上层依赖、远程控制入口或必需的云服务。
 
-The draft schema and parser only validate data and reject activation. A version registry, runtime loader/executor, repair API and Personal OS integration remain separate deliverables; none exist in the v0.3 script.
-
-### Current continuation (2026-10-22)
-
-- Added five regressions which fail on baseline `8821210`: report persistence can
-  expire OCR data or allow focus, rotation or cancellation to change just before
-  the adapter submits input. Recheck after the final write and reject stale data.
-- Added seven acceptance-record validator tests. Local suite now has 49 tests;
-  CI evidence for this change must be recorded on its exact PR head.
-- CI retains synthetic/offline JUnit output for Node 20 and 22. These artifacts
-  describe T0/T1, not Android or physical-device results.
-- No Android SDK, adb or emulator was present in the development container at
-  inspection time. Full production-adapter T3 and T4 remain pending. PR #8 subsequently added hosted framework instrumentation and test-only APKs; no product APK was built.
-- Main branch-rule enforcement and disposable failing-PR verification remain
-  pending. See issue #5 for the remaining P0 work.
-
-### Hardware-free continuation: actual engine and failure sensitivity
-
-- PR #6 merged after confirming its exact head's Node 20/22 checks.
-- Shared fault matrix boots the committed bundle in Node and the pinned Rhino
-  engine shipped with AutoJs6 6.7.0. Local suite expands to 77 Node tests and
-  28 Rhino scenarios; 10 deliberately broken safety/verification paths are all
-  detected by tests. See [runtime evidence scope](RUNTIME-TESTING.md).
-- New baseline-red regressions fix exception-code disclosure and losing a valid
-  baseline when replacement rename fails. Owned-image cleanup, write failures,
-  duplicate starts, cancellation, cold restart and ignored input are exercised.
-- PR/main CI and candidate CD gain runtime and mutation gates; retain results.
-  These remain T0/T1 evidence. Hosted framework instrumentation subsequently adds partial T3; full production-adapter T3 and T4 Redmi remain pending.
-
-## Release sequence
-
-1. Add or change a Skill; bind to declared game/channel/locale/engine ABI.
-2. CI tests functional and adversarial fixtures, static schemas and graph constraints.
-3. Quarantine if semantic anchors drift or postconditions fail; repair AI outputs proposal only.
-4. Explicit approval + real-device acceptance before production activation.
-5. Deploy versioned data package to phone; retain last known good and evidence for rollback.
-6. Monitor new failure fingerprints; rate-limit and disable *affected* Skill, not unrelated tasks.
-
-## Cost and energy
-
-Sequentially schedule ten games; no continuous 10-game 3D concurrent loop. Energy estimates are **scenario models not Redmi measurements**. M6 must measure task Wh, screenshot/OCR overhead, idle baseline, retry/failed-task overhead and thermal/power throttling before optimizing cloud compute or model choice.
-
-### P0 hardening delta (2026-10-22)
-
-- [x] Review existing hosted CI and candidate CD on `main` (workflow run #35 succeeded, SHA `7ec3c978`).
-- [x] Add code-level pre-tap context rechecks and untrusted timestamp rejection with deterministic zero-input regression fixtures in the proposed change.
-- [ ] Confirm required CI against this change's exact PR SHA; do not treat a green earlier main build as its result.
-- [ ] Add Android host adapter/emulator integration tests and collect redacted real-device evidence before claiming physical behavior is verified.
-
-## Current execution queue (2026-10-29)
-
-1. Baseline APK milestone before this continuation: PR #24 merge
-   `1b46ef62502f55fb9993799a5e298ee3a97bf815`. Main quality run #40916707570
-   and Android framework/release run #40916707209 passed. [The matching Release](https://github.com/lse872317312010/android-automation/releases/tag/milestone-1b46ef62502f55fb9993799a5e298ee3a97bf815)
-   contains the commit-bound APK, script, framework receipt and SHA256SUMS.
-   This is fixture evidence, not Redmi/game acceptance.
-2. M0 release-integrity gates passed on PR #21, #23 and #24 main commits. M0
-   remains open for main-branch ruleset enforcement and a disposable red-PR
-   merge-rejection check. The connected GitHub app exposes no ruleset-write action. Production MediaProjection, permission
-   lifecycle and Shizuku input still lack complete native instrumentation.
-3. M1 remains pending physical Redmi acceptance. Complete the eight scenarios
-   in [evidence/README.md](../evidence/README.md) on the exact reviewed script.
-   Keep live-game input, Skill activation and signed production promotion
-   disabled until their own evidence is reviewed.
-4. M2 draft contracts merged in sequence: schema/parser (`d360a2d`), metadata
-   assessor (`a6ecb7b`), context diagnostics (`831d09c`), registry
-   (`1705dd9`), rollback graph checks (`ee5521a`) and registry-version
-   compatibility review (`1b46ef6`). This continuation checks the declared
-   last-known-good target against caller-supplied game, Skill and device context.
-   It remains review-only: no Skill is chosen, loaded, executed, rolled back or
-   activated. Signature/trust design and any executor remain separate gates.
-5. Each accepted development milestone includes a commit-bound APK, script,
-   SHA256SUMS and validation scope in GitHub Releases. APKs are temporary
-   debug-signed test harnesses; later builds may require reinstalling and official
-   AutoJs6 is still required to run the exported JS. They do not imply Redmi or
-   live-game acceptance.
-
-## Real OCR continuation (2026-10-28)
-
-PR #21 adds real emulator screenshot/OCR/input verification around the portable
-policy: success, duplicate labels, ineffective input, already-complete, read-only
-and delayed frames. All eleven native JUnit identities are required before a
-receipt or milestone APK is packaged. This remains a fixture adapter; production
-AutoJs6 MediaProjection, permission lifecycle, Shizuku, Redmi and game acceptance
-retain their separate gates.
-
-Native attempts exposed ML Kit initialization/Application-context packaging
-requirements and CPU OCR exceeding the unchanged 2500 ms freshness budget. The
-model is bundled in the debug host, network permissions are removed, and a fullscreen
-fixture and bounded model warmup reduce irrelevant work. Native input delivery
-plus two result OCR frames exercise full-resolution screenshot coordinates.
-
-Real mixed-confidence duplicates exposed a portable policy defect. Input
-uniqueness now considers all matching texts before confidence filtering. The
-new regression fails on the preceding implementation; it is shared across Node,
-Rhino and the Android script matrix. A targeted mutation restores the unsafe
-filter to check regression sensitivity. See PR #21 and issue #5 for exact-commit
-hosted results; local results alone do not satisfy the native gate.
-
-## Milestone delivery validation (2026-10-29)
-
-- PR #21 merged at `76a8e00dc600a4de847425fd041ff38092a8083c`. Main
-  quality run #40656064175 and native/release run #40656064072 passed; all
-  eleven native tests passed and the matching APK/script Release is available.
-- PR #24 merged at `1b46ef62502f55fb9993799a5e298ee3a97bf815`. Main
-  quality run #40916707570 and Android framework/release run #40916707209
-  passed. Release upload/readback succeeded; the matching commit-bound APK,
-  script, framework receipt and checksums are published.
-- PR #23 merged at `ee5521aa0d1ae54975f521deaae77345e92a1351`. Main
-  quality run #40908622521 and native/release run #40908622644 passed, including
-  SDK signature verification, packaged script/receipt/checksum binding, uploaded
-  byte readback and publication of the matching Release.
-- Android SDK signature verification and the package consistency gate bind the
-  APK-embedded script, standalone script, source checkout, native receipt and
-  checksum manifest; PR #21's exact main commit passed.
-- `publish-milestone.sh` creates a draft, downloads and verifies uploaded bytes
-  against the build manifest, then publishes. `test/publish_test.py` covers bad
-  readback, interrupted draft recovery and published-release immutability using
-  a fake `gh` CLI and the real byte validator. These gates passed before the
-  PR #21 Release was published.
-- Main branch-rule enforcement, production adapter/permission lifecycle, physical
-  Redmi, live-game acceptance and stable signed promotion remain separate work.
+[架构决策](ADR-0001-reliable-game-agent.md) · [组件研究](GAME-AGENT-RESEARCH.md) · [模拟器覆盖范围](../android-harness/README.md) · [10 月路线和历次测试记录（存档）](https://github.com/lse872317312010/android-automation/blob/d2f62105af5d067cdbc962d2c37b969cd05f119e/docs/ROADMAP.md)

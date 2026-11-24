@@ -4,12 +4,12 @@
 
 ## 工程路线与质量门禁（先测试，后开发）
 
-项目优先级按 [路线图](docs/ROADMAP.md) 执行：**M0 CI/CD 与合同测试 → M1 Redmi 真机验收 → M2 Skill Runtime/隔离 → M3 星铁垂直切片 → M4 AI 修复提案 → M5 上游同步 → M6 多游戏调度**。
+当前[交付顺序](docs/ROADMAP.md#交付顺序)：**手机单入口自测 → 用实际 AutoJs6 和 Shizuku 做模拟器回归 → Redmi 八项验收 → 星铁「设置」单步验证**。CI 持续运行；通用 Skill 执行器、AI 修复和多游戏调度排在首个游戏动作之后。
 
 - [ADR-0001：确定性 Game Agent + AI Skill Repair](docs/ADR-0001-reliable-game-agent.md) — 架构原则、更新自修复、零 Token 优先策略与安全边界。
 - [游戏 Agent 研究矩阵](docs/GAME-AGENT-RESEARCH.md) — MaaFwPhoneAI、MobiAgent/AgentRR、Mobile-Agent-E、MaaFramework、MaaEnd、BetterGI、星铁上游等。
 - [CI/CD、测试环境与质量门禁](docs/QUALITY-GATES.md) — Node LTS、随机故障注入、覆盖率、生成构建一致性、模拟器与真机的分级验收。
-- [路线图与具体完成条件](docs/ROADMAP.md) — M0–M6、各阶段退出条件、Skill/版本管理接口草案。
+- [路线图与具体完成条件](docs/ROADMAP.md) — 当前可下载版本、下一项开发交付、模拟器和真机各自要证明什么。
 - [不可执行的星铁 Skill 清单示例](examples/starrail-skill-manifest.example.json) — 当前只接受 draft 数据；由 [JSON Schema](schemas/skill-manifest.v0.draft.schema.json) 和纯 JS [校验器](src/skill-contract.js) 检查，也可离线运行 [CLI](tool/validate-skill-manifest.cjs)。元数据兼容评估只比较调用方提供的字段；`validateCompatibilityContext` 返回稳定字段错误码且不回显输入值；`validateDraftRegistry` 检查最多 32 个草稿条目，拒绝重复身份、缺失/自引用/循环回滚目标；`assessDraftRegistryCompatibility` 对指定 Skill 的版本历史进行只读比对，多个兼容版本会因歧义而阻断。唯一匹配也只返回 fixture review 状态且 `activationAllowed: false`；这些合同不验证真机身份、不选择、加载或执行 Skill。
 
 **“0 bug”是质量目标，不能作为未经证明的绝对保证。** 实际执行标准是零已知 P0/P1 缺陷、全量强制测试通过、失败场景零误触控和零错误完成宣称。CI 仅验证硬件接口以上的可模拟策略；真机权限、MediaProjection、OCR 和 Shizuku 的行为必须独立验收。
@@ -18,6 +18,8 @@ CI 在 PR 和主分支运行 Node 20/22、AutoJs6 Rhino、API 30 框架测试、
 
 
 ## 手机上测试（无需 PC）
+
+只想测试自动化时，可以直接用官方 AutoJs6 加[对应 Release](https://github.com/lse872317312010/android-automation/releases) 里的 `AndroidAutomation.js`。体验 APK 是可选的手动测试页和脚本导出工具；下述步骤适用于现有版本。
 
 1. 安装 [AutoJs6 6.7.0 arm64 官方 APK](https://github.com/SuperMonster003/AutoJs6/releases/download/v6.7.0/autojs6-v6.7.0-arm64-v8a-62db1ff8.apk)。
 2. 在 AutoJs6 左侧抽屉打开 **Shizuku** 并允许授权。Shizuku 已启动不等于 AutoJs6 已获得授权。不需要打开无障碍或配置 ADB。
